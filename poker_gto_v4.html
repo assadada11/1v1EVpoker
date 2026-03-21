@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>1v1 EV Simulate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090c;--bg2:#0d1117;--bg3:#131920;--bg4:#192028;
+  --b1:#1e2830;--b2:#273240;--b3:#344050;
+  --t1:#d8e4f0;--t2:#7a90a4;--t3:#435060;
+  --ip:#1e68d8;--ipbg:#08182e;--iphl:#4890f8;
+  --oop:#6438c8;--oopbg:#140830;--oophl:#9868f0;
+  --bd:#0e9868;--bdbg:#061e18;--bdhl:#28c898;
+  --grn:#10a860;--red:#d83030;--gold:#c89818;
+  --r:6px;--r2:10px;
+  --fs:13px;
+  --font-body:'Space Grotesk','Hiragino Sans',sans-serif;
+  --font-ja:'Noto Serif JP','Hiragino Mincho ProN',serif;
+  /* 和テイスト: 朱と藍のアクセント */
+  --shu:#c03820;   /* 朱色 */
+  --ai:#1a3a5c;    /* 藍色 */
+  --washi:rgba(210,195,175,.04); /* 和紙テクスチャ感 */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg);color:var(--t1);font-family:var(--font-body);font-size:var(--fs)}
+body{min-height:100vh;background:var(--bg);background-image:radial-gradient(ellipse at 20% 0%,rgba(30,104,216,.06) 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(100,56,200,.05) 0%,transparent 60%)}
+.wrap{max-width:860px;margin:0 auto;padding:1.5rem 1rem 6rem}
+
+/* Header — 和モダン */
+.app-hdr{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--b1);position:relative}
+.app-hdr::after{content:'';position:absolute;bottom:-1px;left:0;width:60px;height:1px;background:linear-gradient(90deg,var(--shu),transparent)}
+.app-logo{display:flex;align-items:baseline;gap:8px}
+.app-title-en{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;letter-spacing:.04em;color:var(--t1)}
+.app-title-ja{font-family:var(--font-ja);font-size:11px;font-weight:400;color:var(--t3);letter-spacing:.12em;padding-left:2px}
+.app-hdr-divider{width:1px;height:18px;background:var(--b2);margin:0 4px}
+.reset-btn{margin-left:auto;padding:5px 14px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--b2);border-radius:20px;background:none;color:var(--t3);font-family:var(--font-body);letter-spacing:.04em;transition:all .15s}
+.reset-btn:hover{color:var(--t1);border-color:var(--t2);background:var(--bg3)}
+
+/* Breadcrumb */
+.bc{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:1.5rem;min-height:20px}
+.bc-street{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);padding:2px 8px;border-left:2px solid var(--shu);margin-left:2px}
+.bc-act{font-size:10px;font-weight:600;padding:2px 9px;border-radius:3px;letter-spacing:.02em}
+.bc-act.c{background:var(--bg4);color:var(--t3);border:1px solid var(--b2)}
+.bc-act.b{background:var(--ipbg);color:var(--iphl);border:1px solid var(--ip)}
+.bc-act.ob{background:var(--oopbg);color:var(--oophl);border:1px solid var(--oop)}
+.bc-act.k{background:var(--bdbg);color:var(--bdhl);border:1px solid var(--bd)}
+.bc-arr{font-size:10px;color:var(--b3)}
+
+/* Panels */
+.panel{background:var(--bg2);border:1px solid var(--b1);border-radius:var(--r2);padding:1.1rem;margin-bottom:.75rem;background-image:var(--washi)}
+.panel.active{border-color:var(--b2)}
+.ph{display:flex;align-items:center;gap:8px;margin-bottom:.9rem}
+.pnum{width:20px;height:20px;border-radius:2px;background:var(--shu);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Space Grotesk',sans-serif}
+.ptitle{font-size:13px;font-weight:600;letter-spacing:.02em;font-family:'Space Grotesk',sans-serif}
+.back-btn{margin-left:auto;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--b2);border-radius:3px;background:none;color:var(--t3);font-family:var(--font-body);letter-spacing:.04em}
+.back-btn:hover{color:var(--t1);border-color:var(--t2)}
+
+/* Cards */
+.card-row{display:flex;gap:4px;min-height:48px;align-items:center;flex-wrap:wrap}
+.slot{width:38px;height:50px;border:1.5px dashed var(--b2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--t3);cursor:pointer;transition:all .1s}
+.slot:hover{border-color:var(--t2);background:var(--bg4)}
+.slot.ip-act{border-style:solid;border-color:var(--iphl);background:var(--ipbg);color:var(--iphl)}
+.slot.oop-act{border-style:solid;border-color:var(--oophl);background:var(--oopbg);color:var(--oophl)}
+.slot.bd-act{border-style:solid;border-color:var(--bdhl);background:var(--bdbg);color:var(--bdhl)}
+.fc{width:38px;height:50px;border-radius:6px;font-size:13px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:1px solid;transition:opacity .1s}
+.fc:hover{opacity:.7}
+.fc.ci{background:var(--ipbg);border-color:var(--ip);color:#a0c8ff}
+.fc.ci.d{background:#2c1808;border-color:#c07030;color:#f0b870}
+.fc.ci.h{background:#340c0c;border-color:#d04040;color:#f09090}
+.fc.co{background:var(--oopbg);border-color:var(--oop);color:#c0a8ff}
+.fc.co.d{background:#2c1808;border-color:#c07030;color:#f0b870}
+.fc.co.h{background:#340c0c;border-color:#d04040;color:#f09090}
+.fc.cb{background:var(--bdbg);border-color:var(--bd);color:#88e0c8}
+.fc.cb.d{background:#2c1808;border-color:#c07030;color:#f0b870}
+.fc.cb.h{background:#340c0c;border-color:#d04040;color:#f09090}
+.fc .cs{font-size:9px}
+.ss{color:#4090f0}.sc{color:#30b870}.sd{color:#c07830}.sh{color:#d04040}
+.cis{color:#80b8ff}.cic{color:#60d0a0}.cid{color:#f0b870}.cih{color:#f09090}
+
+/* Setup */
+.rp-grid{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.65rem}
+@media(max-width:500px){.rp-grid{grid-template-columns:1fr}}
+.rp{background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:.65rem}
+.rp.sel-ip{border-color:var(--ip)}
+.rp.sel-oop{border-color:var(--oop)}
+.rph{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.rpl{font-size:12px;font-weight:700}
+.mtog{display:flex;background:var(--bg4);border-radius:5px;padding:2px;gap:2px}
+.mb{padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;border:none;background:none;color:var(--t3);border-radius:3px;transition:all .1s}
+.mb.on{background:var(--bg2);color:var(--t1);border:1px solid var(--b2)}
+.hint{font-size:10px;color:var(--t3)}
+.pgl{font-size:9px;font-weight:700;color:var(--t3);margin-bottom:3px;letter-spacing:.06em;text-transform:uppercase}
+.prs{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px}
+.pb2{padding:2px 7px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--b2);border-radius:12px;background:none;color:var(--t3);transition:all .1s}
+.pb2:hover{border-color:var(--t2);color:var(--t1)}
+.pb2.oni{background:var(--ipbg);border-color:var(--ip);color:var(--iphl)}
+.pb2.ono{background:var(--oopbg);border-color:var(--oop);color:var(--oophl)}
+.rbadge{font-size:10px;padding:2px 8px;border-radius:10px;display:inline-block;margin-top:3px}
+.rbi{background:var(--ipbg);color:var(--iphl);border:1px solid var(--ip)}
+.rbo{background:var(--oopbg);color:var(--oophl);border:1px solid var(--oop)}
+
+/* Card picker */
+.cpw{background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:.6rem;margin-bottom:.65rem}
+.cph{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.cpl{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+.cpl-ip{background:var(--ipbg);color:var(--iphl);border:1px solid var(--ip)}
+.cpl-oop{background:var(--oopbg);color:var(--oophl);border:1px solid var(--oop)}
+.cpl-bd{background:var(--bdbg);color:var(--bdhl);border:1px solid var(--bd)}
+.cpl-n{background:var(--bg4);color:var(--t3);border:1px solid var(--b2)}
+.clr{padding:3px 9px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--b2);border-radius:20px;background:none;color:var(--t3)}
+.clr:hover{color:var(--t1);border-color:var(--t2)}
+.rr{display:flex;gap:3px;margin-bottom:3px}
+.cbb{width:38px;height:50px;border:1px solid var(--b2);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:var(--bg2);color:var(--t1);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:background .08s}
+.cbb:hover{background:var(--bg4)}
+.cbb.used{opacity:.13;pointer-events:none}
+
+/* Inputs */
+.irow{display:flex;gap:.65rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:.65rem}
+.ig{display:flex;flex-direction:column;gap:3px}
+.il{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.02em}
+.ni{padding:7px 10px;font-size:14px;font-weight:700;border:1px solid var(--b2);border-radius:var(--r);background:var(--bg3);color:var(--t1);width:90px}
+.ni:focus{outline:none;border-color:var(--ip)}
+.ni-wide{width:260px}
+.pot-note{font-size:11px;font-weight:700;color:var(--gold);padding:6px 10px;background:var(--bg3);border:1px solid #5a4500;border-radius:var(--r);white-space:nowrap;align-self:flex-end}
+
+/* PF config */
+.pf-config{background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);background-image:var(--washi);padding:.75rem;margin-bottom:.65rem}
+.pfc-title{font-size:11px;font-weight:700;color:var(--t2);margin-bottom:.6rem}
+.pf-row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:.4rem}
+
+/* Buttons */
+.btn{padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;border-radius:var(--r);border:1px solid;transition:all .15s}
+.btn-p{background:var(--bg3);border-color:var(--b2);color:var(--t1);width:100%;margin-top:.1rem}
+.btn-p:hover{background:var(--bg4);border-color:var(--b3)}
+.btn-p:disabled{opacity:.3;cursor:not-allowed}
+.prog{height:2px;background:var(--b1);border-radius:2px;margin-top:5px;overflow:hidden;display:none}
+.pb{height:100%;background:var(--iphl);width:0;transition:width .2s}
+.pl{font-size:10px;color:var(--t3);margin-top:3px;display:none}
+
+/* Range chips */
+.rchips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.65rem}
+.rc{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px}
+.rci{background:var(--ipbg);color:var(--iphl);border:1px solid var(--ip)}
+.rco{background:var(--oopbg);color:var(--oophl);border:1px solid var(--oop)}
+.rcp{background:var(--bg4);color:var(--gold);border:1px solid #5a4500}
+.rcb{background:var(--bdbg);color:var(--bdhl);border:1px solid var(--bd)}
+
+/* Result */
+.rcard{background:var(--bg2);border:1px solid var(--b1);border-radius:var(--r2);padding:.9rem;margin-top:.65rem}
+.rch{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px;margin-bottom:.4rem}
+.rct{font-size:13px;font-weight:700}
+.rcm{font-size:10px;color:var(--t3)}
+.rch2{font-size:11px;margin-bottom:.5rem}
+.eqw{display:flex;align-items:center;gap:8px;padding:.55rem 0}
+.eqn{min-width:48px}
+.eqv{font-size:19px;font-weight:800}
+.eql{font-size:9px;font-weight:700;letter-spacing:.05em}
+.eqbar{flex:1;height:6px;border-radius:3px;overflow:hidden;background:var(--b1);display:flex}
+.bip{background:var(--ip)}
+.eqm{display:flex;justify-content:space-between;font-size:9px;color:var(--t3);margin-top:2px}
+.dvd{border:none;border-top:1px solid var(--b1);margin:.55rem 0}
+.gn{font-size:10px;color:var(--t3);line-height:1.5;padding:4px 8px;border-left:2px solid var(--b2);margin-top:5px}
+
+/* EV grids */
+.evg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+@media(max-width:480px){.evg{grid-template-columns:repeat(2,1fr)}}
+.evc{background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:.5rem .35rem;text-align:center;position:relative}
+.evc.best{border-color:var(--shu);background:var(--bg2)}
+.evl{font-size:10px;color:var(--t3);margin-bottom:2px}
+.evv{font-size:15px;font-weight:800}
+.evs{font-size:9px;color:var(--t3);margin-top:2px;line-height:1.3}
+.btag{position:absolute;top:-7px;left:50%;transform:translateX(-50%);background:var(--shu);color:#fff;font-size:8px;font-weight:700;padding:1px 8px;border-radius:2px;white-space:nowrap;letter-spacing:.06em;font-family:'Space Grotesk',sans-serif}
+.aev-best-tag{position:absolute;top:-7px;left:50%;transform:translateX(-50%);background:var(--shu);color:#fff;font-size:8px;font-weight:700;padding:1px 8px;border-radius:2px;white-space:nowrap;letter-spacing:.06em;font-family:'Space Grotesk',sans-serif}
+.oopg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+@media(max-width:480px){.oopg{grid-template-columns:repeat(2,1fr)}}
+.oopc{background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:.5rem .35rem;text-align:center;position:relative}
+.oopc.best{border-color:var(--shu);background:var(--bg2)}
+.oty{font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;display:inline-block;margin-bottom:2px;letter-spacing:.03em}
+.otf{background:#280808;color:#f07070}
+.otc{background:var(--ipbg);color:var(--iphl)}
+.otr{background:var(--oopbg);color:var(--oophl)}
+.ooplbl{font-size:10px;color:var(--t3);margin-bottom:2px}
+.oopv{font-size:15px;font-weight:800}
+.oops{font-size:9px;color:var(--t3);margin-top:2px;line-height:1.3}
+
+/* POV */
+.povtog{display:flex;background:var(--bg4);border-radius:var(--r);padding:3px;gap:3px;margin-bottom:.65rem}
+.povb{flex:1;padding:6px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:none;color:var(--t3);border-radius:6px;transition:all .12s}
+.povb.on.ipv{background:var(--ipbg);color:var(--iphl);border:1px solid var(--ip)}
+.povb.on.oopv{background:var(--oopbg);color:var(--oophl);border:1px solid var(--oop)}
+.bsel{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.55rem}
+.bchip{padding:3px 9px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--b2);border-radius:20px;background:var(--bg3);color:var(--t3);transition:all .1s}
+.bchip.on{background:var(--ipbg);border-color:var(--ip);color:var(--iphl)}
+.povinfo{padding:5px 10px;border-radius:var(--r);font-size:11px;font-weight:700;margin-bottom:.55rem}
+.pvi{background:var(--ipbg);color:var(--iphl);border:1px solid var(--ip)}
+.pvo{background:var(--oopbg);color:var(--oophl);border:1px solid var(--oop)}
+.warn{background:var(--bg3);border:1px solid var(--b2);border-radius:var(--r);padding:.65rem;font-size:12px;color:var(--t3)}
+
+/* ── Action tree UI ── */
+.act-tree{margin-top:.75rem}
+.act-tree-title{font-size:11px;font-weight:800;color:var(--t2);margin-bottom:.5rem;letter-spacing:.04em;text-transform:uppercase}
+.act-level{background:var(--bg3);border:1px solid var(--b2);border-radius:var(--r);padding:.65rem;margin-bottom:.5rem}
+.act-level-lbl{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:.5rem}
+/* Action buttons with EV */
+.aev-grid{display:flex;flex-wrap:wrap;gap:6px}
+.aev-btn{display:flex;flex-direction:column;align-items:center;padding:8px 12px;min-width:90px;cursor:pointer;border-radius:var(--r);border:1px solid;transition:all .12s;text-align:center;position:relative}
+.aev-btn .aev-name{font-size:11px;font-weight:700;margin-bottom:2px}
+.aev-btn .aev-size{font-size:9px;opacity:.7;margin-bottom:3px}
+.aev-btn .aev-ev{font-size:13px;font-weight:800}
+.aev-btn .aev-ev-lbl{font-size:8px;font-weight:600;opacity:.7;margin-top:1px}
+.aev-btn.sel{box-shadow:0 0 0 2px white}
+/* IP action buttons */
+.aev-btn.ip-chk{background:var(--bg4);border-color:var(--b2);color:var(--t2)}
+.aev-btn.ip-chk.sel{box-shadow:0 0 0 2px var(--t2)}
+.aev-btn.ip-bet{background:var(--ipbg);border-color:var(--ip);color:var(--iphl)}
+.aev-btn.ip-bet.sel{box-shadow:0 0 0 2px var(--iphl)}
+/* OOP action buttons */
+.aev-btn.oop-chk{background:var(--bg4);border-color:var(--b2);color:var(--t2)}
+.aev-btn.oop-chk.sel{box-shadow:0 0 0 2px var(--t2)}
+.aev-btn.oop-bet{background:var(--oopbg);border-color:var(--oop);color:var(--oophl)}
+.aev-btn.oop-bet.sel{box-shadow:0 0 0 2px var(--oophl)}
+.aev-btn.oop-call{background:var(--bdbg);border-color:var(--bd);color:var(--bdhl)}
+.aev-btn.oop-call.sel{box-shadow:0 0 0 2px var(--bdhl)}
+.aev-btn.oop-fold{background:#280808;border-color:#7f1d1d;color:#f07070}
+.aev-btn.oop-fold.sel{box-shadow:0 0 0 2px #f07070}
+.aev-btn.oop-raise{background:var(--oopbg);border-color:var(--oop);color:var(--oophl)}
+.aev-btn.oop-raise.sel{box-shadow:0 0 0 2px var(--oophl)}
+/* IP response buttons */
+.aev-btn.ip-fold{background:#280808;border-color:#7f1d1d;color:#f07070}
+.aev-btn.ip-call{background:var(--bdbg);border-color:var(--bd);color:var(--bdhl)}
+.aev-btn.ip-raise{background:var(--ipbg);border-color:var(--ip);color:var(--iphl)}
+
+/* Next street inline */
+.next-street-inline{background:var(--bg2);border:1px solid var(--b2);border-radius:var(--r2);padding:.9rem;margin-top:.65rem}
+.nsi-title{font-size:12px;font-weight:700;color:var(--bdhl);margin-bottom:.6rem;display:flex;align-items:center;gap:6px}
+.nsi-badge{font-size:10px;font-weight:700;padding:2px 8px;background:var(--bdbg);color:var(--bdhl);border:1px solid var(--bd);border-radius:20px}
+
+/* Fold terminal */
+.fold-terminal{background:#1a0808;border:1px solid #7f1d1d;border-radius:var(--r);padding:.65rem;margin-top:.5rem;font-size:12px;color:#f07070;text-align:center}
+
+/* Proceed button */
+.proceed-btn{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:.75rem;padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;border-radius:var(--r);border:1px solid var(--bd);background:linear-gradient(135deg,rgba(18,160,110,.15),rgba(18,160,110,.08));color:var(--bdhl);transition:all .15s;letter-spacing:.01em}
+.proceed-btn:hover{background:linear-gradient(135deg,rgba(18,160,110,.25),rgba(18,160,110,.15));border-color:var(--bdhl)}
+.proceed-btn .pb-left{display:flex;align-items:center;gap:8px}
+.proceed-btn .pb-street{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;opacity:.7}
+.proceed-btn .pb-arrow{font-size:18px;opacity:.8}
+.proceed-btn .pb-pot{font-size:11px;padding:3px 10px;background:rgba(18,160,110,.2);border:1px solid rgba(56,216,168,.3);border-radius:20px;color:var(--bdhl)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="app-hdr">
+  <div class="app-logo">
+    <span class="app-title-en">1v1 EV Simulate</span>
+    <span class="app-title-ja">一対一期待値計算</span>
+  </div>
+  <button onclick="resetAll()" class="reset-btn">↺ リセット</button>
+</div>
+<div id="bc" class="bc"></div>
+<div id="main"></div>
+</div>
+<script>
+// ── Constants ──
+const RANKS='AKQJT98765432'.split('');
+const SUITS=[['♠','s'],['♣','c'],['♦','d'],['♥','h']];
+const RV={A:14,K:13,Q:12,J:11,T:10,9:9,8:8,7:7,6:6,5:5,4:4,3:3,2:2};
+const SYM={s:'♠',c:'♣',d:'♦',h:'♥'};
+const SPCLS={s:'ss',c:'sc',d:'sd',h:'sh'};
+const CICLS={s:'cis',c:'cic',d:'cid',h:'cih'};
+const FCMOD={s:'',c:'',d:'d',h:'h'};
+const SIM_N=10000,SPC=300;
+const SN={pre:'PF',flop:'FLOP',turn:'TURN',river:'RIVER'};
+const SJ={pre:'プリフロップ',flop:'フロップ',turn:'ターン',river:'リバー'};
+const BMAX={pre:0,flop:3,turn:4,river:5};
+const STREETS=['pre','flop','turn','river'];
+
+// ── Range presets ──
+const RP={
+  'BTN Open':new Set(['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22','AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','QJs','QTs','Q9s','JTs','J9s','T9s','T8s','98s','87s','76s','65s','54s','AKo','AQo','AJo','ATo','A9o','KQo','KJo','KTo','QJo','QTo','JTo']),
+  'CO Open':new Set(['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22','AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','98s','87s','76s','65s','AKo','AQo','AJo','ATo','KQo','KJo','QJo']),
+  'HJ Open':new Set(['AA','KK','QQ','JJ','TT','99','88','77','66','55','AKs','AQs','AJs','ATs','A9s','A8s','A5s','A4s','KQs','KJs','KTs','K9s','QJs','QTs','JTs','T9s','98s','AKo','AQo','AJo','KQo','KJo','QJo']),
+  'UTG Open':new Set(['AA','KK','QQ','JJ','TT','99','88','77','AKs','AQs','AJs','ATs','KQs','KJs','QJs','JTs','AKo','AQo','AJo','KQo']),
+  'SB Open':new Set(['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22','AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','QJs','QTs','Q9s','Q8s','JTs','J9s','J8s','T9s','T8s','98s','97s','87s','86s','76s','75s','65s','64s','54s','AKo','AQo','AJo','ATo','A9o','A8o','KQo','KJo','KTo','K9o','QJo','QTo','JTo']),
+  'BB Call vs BTN':new Set(['JJ','TT','99','88','77','66','55','44','33','22','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','K6s','QJs','QTs','Q9s','Q8s','JTs','J9s','J8s','T9s','T8s','T7s','98s','97s','96s','87s','86s','85s','76s','75s','65s','64s','54s','53s','43s','AQo','AJo','ATo','A9o','A8o','A7o','KQo','KJo','KTo','K9o','QJo','QTo','Q9o','JTo','J9o','T9o']),
+  'BB Call vs CO':new Set(['JJ','TT','99','88','77','66','55','44','33','22','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','QJs','QTs','Q9s','Q8s','JTs','J9s','T9s','T8s','98s','97s','87s','76s','65s','54s','AQo','AJo','ATo','A9o','KQo','KJo','KTo','QJo','QTo','JTo']),
+  'BB Call vs HJ':new Set(['QQ','JJ','TT','99','88','77','66','55','44','33','22','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','T8s','98s','87s','76s','65s','AQo','AJo','ATo','KQo','KJo','QJo','QTo','JTo']),
+  'BB Call vs UTG':new Set(['QQ','JJ','TT','99','88','77','66','55','44','33','22','ATs','A9s','A8s','A7s','A6s','A5s','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s','87s','AJo','ATo','KQo','KJo','QJo']),
+  'BB Call vs SB':new Set(['JJ','TT','99','88','77','66','55','44','33','22','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','QJs','QTs','Q9s','Q8s','JTs','J9s','J8s','T9s','T8s','98s','97s','87s','86s','76s','75s','65s','64s','54s','AQo','AJo','ATo','A9o','KQo','KJo','KTo','QJo','QTo','JTo','J9o']),
+  'SB Call vs BTN':new Set(['TT','99','88','77','66','55','44','33','22','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','T8s','98s','87s','76s','65s','54s','AQo','AJo','ATo','KQo','KJo','QJo']),
+  'BB 3bet vs BTN':new Set(['AA','KK','QQ','AKo','AKs','AQs','KQs','A5s','A4s','A3s','A2s','76s','65s','54s']),
+  'BB 3bet vs CO':new Set(['AA','KK','QQ','JJ','AKo','AKs','AQs','A4s','A3s','A2s','65s']),
+  'BB 3bet vs HJ':new Set(['AA','KK','QQ','JJ','AKo','AKs','AQs','A3s','A2s']),
+  'SB 3bet vs BTN':new Set(['AA','KK','QQ','JJ','TT','AKo','AKs','AQs','AJs','KQs','A5s','A4s','76s','65s']),
+  'BU 3bet vs CO':new Set(['AA','KK','QQ','JJ','TT','AKo','AKs','AQs','AJs','KQs','A5s','A4s','76s']),
+  'バリューレンジ':new Set(['AA','KK','QQ','JJ','TT','AKs','AQs','AJs','ATs','AKo','AQo']),
+  'ブラフレンジ':new Set(['A5s','A4s','A3s','A2s','76s','65s','54s','87s','98s','K9s','Q9s','J9s']),
+  'CBレンジ(ドライ)':new Set(['AA','KK','QQ','JJ','TT','99','AKs','AQs','AJs','ATs','AKo','AQo','AJo','A5s','A4s','KQs','KJs']),
+  'CBレンジ(ウェット)':new Set(['AA','KK','QQ','JJ','AKs','AQs','AJs','AKo','A5s','A4s','76s','65s','54s']),
+  'チェックレンジ':new Set(['88','77','66','55','44','33','22','K9s','Q9s','J9s','T8s','97s','86s','75s','64s']),
+};
+const PG=[
+  {lbl:'PFオープン',keys:['UTG Open','HJ Open','CO Open','BTN Open','SB Open']},
+  {lbl:'BBコール',keys:['BB Call vs UTG','BB Call vs HJ','BB Call vs CO','BB Call vs BTN','BB Call vs SB']},
+  {lbl:'SBコール',keys:['SB Call vs BTN']},
+  {lbl:'3bet',keys:['BB 3bet vs HJ','BB 3bet vs CO','BB 3bet vs BTN','SB 3bet vs BTN','BU 3bet vs CO']},
+  {lbl:'ポストフロップ',keys:['バリューレンジ','ブラフレンジ','CBレンジ(ドライ)','CBレンジ(ウェット)','チェックレンジ']},
+];
+
+// ── App state ──
+let S={
+  phase:'setup',
+  ipMode:'fix',oopMode:'fix',
+  ipHand:[],oopHand:[],
+  ipRng:null,oopRng:null,
+  ipCombos:null,oopCombos:null,
+  myPos:'ip', // 'ip' | 'oop' — 自分のポジション
+  sb:0.5,bb:1,bba:false,
+  openSize:2.5,opener:'other', // other=SB以外(SB dead), sb=SBオープン
+  pfType:'open_call',threeBetSize:9,
+  pot:5.5,eff:100,
+  board:[],street:'pre',
+  history:[],
+  // current street sim state
+  simResult:null,
+  pickerTgt:null,
+  // action tree state (per street)
+  actIP:null,   // {l,b} selected IP action
+  actOOP:null,  // {type,l,b} selected OOP action
+  actIP2:null,  // {type,l,b} IP response to OOP raise/bet
+};
+
+// ── Helpers ──
+const sym=s=>SYM[s]||s;
+const allUsed=()=>[...(S.ipHand||[]),...(S.oopHand||[]),...S.board];
+const ci=k=>{const r=k[0],s=k.slice(1);return`<span class="${CICLS[s]}" style="font-weight:700">${r}${sym(s)}</span>`;};
+const fcCls=(p,s)=>`fc ${p==='ip'?'ci':p==='oop'?'co':'cb'}${FCMOD[s]?' '+FCMOD[s]:''}`;
+const em=()=>{const f=S.ipMode==='fix',g=S.oopMode==='fix';return f&&g?'both':f?'ip':g?'oop':'none';};
+const bsizes=(pot,eff)=>[
+  {l:'25% Pot',b:+Math.min(pot*.25,eff).toFixed(1)},
+  {l:'33% Pot',b:+Math.min(pot*.33,eff).toFixed(1)},
+  {l:'50% Pot',b:+Math.min(pot*.5,eff).toFixed(1)},
+  {l:'75% Pot',b:+Math.min(pot*.75,eff).toFixed(1)},
+  {l:'100% Pot',b:+Math.min(pot,eff).toFixed(1)},
+  {l:'125% Pot',b:+Math.min(pot*1.25,eff).toFixed(1)},
+];
+const fmtEV=v=>v===null||v===undefined?'—':`${v>=0?'+':''}${v.toFixed(2)}`;
+
+function calcPot(){
+  const ante=S.bba?S.bb:0;
+  const sbDead=S.opener==='other'?S.sb:0;
+  if(S.pfType==='open_call')return +(S.openSize*2+sbDead+ante).toFixed(1);
+  return +(S.threeBetSize*2+sbDead+ante).toFixed(1);
+}
+
+function render(){renderBC();document.getElementById('main').innerHTML=S.phase==='setup'?buildSetup():buildSim();}
+
+// ── Breadcrumb ──
+function renderBC(){
+  const el=document.getElementById('bc');
+  if(!S.history.length&&S.phase==='setup'){el.innerHTML='';return;}
+  let h='';
+  S.history.forEach((x,i)=>{
+    if(i===0)h+=`<span class="bc-street">${SN[x.street]}</span>`;
+    h+=`<span class="bc-arr">→</span><span class="bc-act ${x.cls}">${x.label}</span>`;
+  });
+  if(S.phase==='sim'){
+    const cur=SN[S.street];
+    if(!S.history.length)h+=`<span class="bc-street">${cur}</span>`;
+    else h+=`<span class="bc-arr">→</span><span class="bc-street">${cur}</span>`;
+  }
+  el.innerHTML=h;
+}
+
+// ── Setup ──
+function buildSetup(){
+  const ok=(S.ipMode==='fix'?S.ipHand.length===2:!!S.ipRng)&&(S.oopMode==='fix'?S.oopHand.length===2:!!S.oopRng);
+  const pot=calcPot();
+  const myIsIP=S.myPos==='ip';
+  return`
+<div class="panel active">
+  <div class="ph"><div class="pnum">1</div><div class="ptitle">プリフロップ セットアップ</div></div>
+
+  <!-- 自分のポジション -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:.85rem;padding:.65rem .75rem;background:var(--bg3);border:1px solid var(--b2);border-radius:var(--r)">
+    <div style="font-size:11px;font-weight:700;color:var(--t2);white-space:nowrap">自分のポジション</div>
+    <div style="display:flex;gap:6px;flex:1">
+      <button onclick="S.myPos='ip';render()" style="flex:1;padding:8px;font-size:13px;font-weight:700;cursor:pointer;border-radius:var(--r);border:1.5px solid ${myIsIP?'var(--ip)':'var(--b2)'};background:${myIsIP?'var(--ipbg)':'var(--bg2)'};color:${myIsIP?'var(--iphl)':'var(--t3)'}">
+        IP <span style="font-size:10px;font-weight:400;opacity:.7">（In Position / 後のアクション）</span>
+      </button>
+      <button onclick="S.myPos='oop';render()" style="flex:1;padding:8px;font-size:13px;font-weight:700;cursor:pointer;border-radius:var(--r);border:1.5px solid ${!myIsIP?'var(--oop)':'var(--b2)'};background:${!myIsIP?'var(--oopbg)':'var(--bg2)'};color:${!myIsIP?'var(--oophl)':'var(--t3)'}">
+        OOP <span style="font-size:10px;font-weight:400;opacity:.7">（Out of Position / 先のアクション）</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="pf-config">
+    <div class="pfc-title">ブラインド & ポット構成</div>
+    <div class="pf-row">
+      <div class="ig"><div class="il">SB</div><input class="ni" style="width:70px" type="number" value="${S.sb}" min="0" step="0.5" oninput="S.sb=+this.value;updPot()"></div>
+      <div class="ig"><div class="il">BB</div><input class="ni" style="width:70px" type="number" value="${S.bb}" min="1" step="0.5" oninput="S.bb=+this.value;updPot()"></div>
+      <div class="ig">
+        <div class="il">BBアンティ</div>
+        <button class="aev-btn${S.bba?' oop-call':' ip-chk'}" style="min-width:60px;padding:5px 10px" onclick="S.bba=!S.bba;updPot()">${S.bba?'ON':'OFF'}</button>
+      </div>
+    </div>
+    <div class="pf-row" style="margin-top:.4rem">
+      <div class="ig">
+        <div class="il">シナリオ</div>
+        <select class="ni" style="width:210px;font-size:12px" onchange="S.pfType=this.value;updPot()">
+          <option value="open_call"${S.pfType==='open_call'?' selected':''}>オープン → コール</option>
+          <option value="3bet_call"${S.pfType==='3bet_call'?' selected':''}>オープン → 3bet → コール</option>
+        </select>
+      </div>
+      <div class="ig">
+        <div class="il">オープナー</div>
+        <select class="ni" style="width:180px;font-size:12px" onchange="S.opener=this.value;updPot()">
+          <option value="other"${S.opener==='other'?' selected':''}>SB以外 (BTN/CO等)</option>
+          <option value="sb"${S.opener==='sb'?' selected':''}>SB</option>
+        </select>
+      </div>
+      <div class="ig"><div class="il">オープンサイズ(BB)</div><input class="ni" type="number" value="${S.openSize}" min="2" step="0.5" oninput="S.openSize=+this.value;updPot()"></div>
+      ${S.pfType==='3bet_call'?`<div class="ig"><div class="il">3betサイズ(BB)</div><input class="ni" type="number" value="${S.threeBetSize}" min="6" step="0.5" oninput="S.threeBetSize=+this.value;updPot()"></div>`:''}
+    </div>
+    <div class="pf-row" style="margin-top:.4rem">
+      <div class="ig"><div class="il">実効スタック(BB)</div><input class="ni" type="number" value="${S.eff}" min="1" oninput="S.eff=+this.value;render()"></div>
+      <div class="pot-note">フロップポット: <b>${pot}BB</b>${S.opener==='other'?`<span style="font-size:9px;opacity:.7"> (SB ${S.sb}BB dead込み)</span>`:''}</div>
+    </div>
+  </div>
+  <div class="rp-grid">
+    <div class="rp${S.pickerTgt==='ip'?' sel-ip':''}">
+      <div class="rph"><div class="rpl" style="color:var(--iphl)">IP</div>
+        <div class="mtog"><button class="mb${S.ipMode==='fix'?' on':''}" onclick="setMode('ip','fix')">固定</button><button class="mb${S.ipMode==='rng'?' on':''}" onclick="setMode('ip','rng')">レンジ</button></div>
+      </div>
+      ${S.ipMode==='fix'?`<div class="card-row">${handSlots('ip')}</div><div class="hint" style="margin-top:3px">スロットをクリックして選択</div>`:rngSel('ip')}
+    </div>
+    <div class="rp${S.pickerTgt==='oop'?' sel-oop':''}">
+      <div class="rph"><div class="rpl" style="color:var(--oophl)">OOP</div>
+        <div class="mtog"><button class="mb${S.oopMode==='fix'?' on':''}" onclick="setMode('oop','fix')">固定</button><button class="mb${S.oopMode==='rng'?' on':''}" onclick="setMode('oop','rng')">レンジ</button></div>
+      </div>
+      ${S.oopMode==='fix'?`<div class="card-row">${handSlots('oop')}</div><div class="hint" style="margin-top:3px">スロットをクリックして選択</div>`:rngSel('oop')}
+    </div>
+  </div>
+  ${(S.ipMode==='fix'||S.oopMode==='fix')?picker():''}
+  <button class="btn btn-p" ${ok?'':'disabled'} onclick="startSim()">フロップへ進む →</button>
+</div>`;
+}
+
+function updPot(){S.pot=calcPot();render();}
+function handSlots(pos){
+  const arr=pos==='ip'?S.ipHand:S.oopHand;let h='';
+  for(let i=0;i<2;i++){
+    if(arr[i]){const k=arr[i],r=k[0],s=k.slice(1);h+=`<div class="${fcCls(pos,s)}" onclick="rmCard('${pos}',${i})"><span>${r}</span><span class="cs ${SPCLS[s]}">${sym(s)}</span></div>`;}
+    else{const a=S.pickerTgt===pos;h+=`<div class="slot${a?' '+(pos==='ip'?'ip-act':'oop-act'):''}" onclick="setTgt('${pos}')">${a?'▼':''}</div>`;}
+  }return h;
+}
+function rngSel(pos){
+  const sel=pos==='ip'?S.ipRng:S.oopRng,isO=pos==='oop';
+  let h='';
+  PG.forEach(g=>{h+=`<div style="margin-bottom:4px"><div class="pgl">${g.lbl}</div><div class="prs">`;g.keys.forEach(k=>h+=`<button class="pb2${sel===k?' on'+(isO?'o':'i'):''}" onclick="selPreset('${pos}','${k}')">${k}</button>`);h+='</div></div>';});
+  h+=sel?`<div class="rbadge ${isO?'rbo':'rbi'}">${sel} — ${RP[sel]?.size||0}ハンド</div>`:`<div class="hint">プリセットを選択</div>`;
+  return h;
+}
+function picker(){
+  const used=allUsed();
+  let h=`<div class="cpw"><div class="cph"><span class="cpl${S.pickerTgt?' cpl-'+(S.pickerTgt==='ip'?'ip':'oop'):' cpl-n'}">${S.pickerTgt?(S.pickerTgt==='ip'?'IP選択中':'OOP選択中'):'スロットをクリック'}</span><button class="clr" onclick="S.ipHand=[];S.oopHand=[];S.pickerTgt=null;render()">クリア</button></div>`;
+  SUITS.forEach(([sy,s])=>{h+='<div class="rr">';RANKS.forEach(r=>{const k=r+s;h+=`<button class="cbb${used.includes(k)?' used':''}" onclick="pickCard('${k}')"><span>${r}</span><span class="cs ${SPCLS[s]}">${sy}</span></button>`;});h+='</div>';});
+  return h+'</div>';
+}
+function setTgt(pos){S.pickerTgt=pos;render();}
+function rmCard(pos,i){if(pos==='ip')S.ipHand.splice(i,1);else S.oopHand.splice(i,1);render();}
+function pickCard(k){
+  if(!S.pickerTgt||allUsed().includes(k))return;
+  if(S.pickerTgt==='ip'&&S.ipHand.length<2){S.ipHand.push(k);if(S.ipHand.length===2&&S.oopMode==='fix')S.pickerTgt='oop';}
+  else if(S.pickerTgt==='oop'&&S.oopHand.length<2){S.oopHand.push(k);if(S.oopHand.length===2)S.pickerTgt=null;}
+  render();
+}
+function setMode(pos,mode){
+  if(pos==='ip'){S.ipMode=mode;if(mode==='rng'&&S.pickerTgt==='ip')S.pickerTgt=null;}
+  else{S.oopMode=mode;if(mode==='rng'&&S.pickerTgt==='oop')S.pickerTgt=null;}
+  render();
+}
+function selPreset(pos,k){if(pos==='ip')S.ipRng=k;else S.oopRng=k;render();}
+
+function startSim(){
+  S.pot=calcPot();
+  if(S.ipMode==='rng'&&S.ipRng)S.ipCombos=expandRng(S.ipRng,[...(S.oopMode==='fix'?S.oopHand:[])]);
+  if(S.oopMode==='rng'&&S.oopRng)S.oopCombos=expandRng(S.oopRng,[...(S.ipMode==='fix'?S.ipHand:[])]);
+  S.phase='sim';S.street='flop';S.board=[];S.history=[];S.actIP=null;S.actOOP=null;S.actIP2=null;
+  renderBC();render();
+}
+function expandRng(name,blocked){
+  const all=[];for(const h of RP[name])for(const c of xh(h))if(!c.some(k=>blocked.includes(k)))all.push(c);return all;
+}
+
+// ── Sim screen ──
+function buildSim(){
+  const boardOK=S.board.length===BMAX[S.street];
+  return`
+<div class="panel active">
+  <div class="ph">
+    <div class="pnum">${STREETS.indexOf(S.street)+1}</div>
+    <div class="ptitle">${SJ[S.street]}</div>
+    <button class="back-btn" onclick="goBack()">← 戻る</button>
+  </div>
+  ${rchips()}
+  ${boardPicker()}
+  <button class="btn btn-p" id="sim-start-btn" ${boardOK?'':'disabled'} onclick="runSim()">シミュレーション開始</button>
+  <div class="prog"><div class="pb" id="spb"></div></div>
+  <div class="pl" id="spl"></div>
+  <div id="sres"></div>
+</div>`;
+}
+
+function rchips(){
+  let h='<div class="rchips">';
+  if(S.ipMode==='fix')h+=`<span class="rc rci">IP: ${S.ipHand.map(ci).join(' ')}</span>`;
+  else if(S.ipCombos)h+=`<span class="rc rci">IP: ${S.ipRng} (${S.ipCombos.length}コンボ)</span>`;
+  if(S.oopMode==='fix')h+=`<span class="rc rco">OOP: ${S.oopHand.map(ci).join(' ')}</span>`;
+  else if(S.oopCombos)h+=`<span class="rc rco">OOP: ${S.oopRng} (${S.oopCombos.length}コンボ)</span>`;
+  h+=`<span class="rc rcp">ポット: ${S.pot}BB / スタック: ${S.eff}BB</span>`;
+  if(S.board.length)h+=`<span class="rc rcb">Board: ${S.board.map(ci).join(' ')}</span>`;
+  return h+'</div>';
+}
+
+function boardPicker(){
+  const max=BMAX[S.street]; // total cards needed for this street
+  const lbl=['F1','F2','F3','T','R'];
+  let slots='';
+  for(let i=0;i<max;i++){
+    if(S.board[i]){
+      const k=S.board[i],r=k[0],s=k.slice(1);
+      // 前のストリートのカード（フロップ）はクリック不可で薄く表示
+      const prevStreet=(S.street==='turn'&&i<3)||(S.street==='river'&&i<4);
+      if(prevStreet){
+        slots+=`<div class="${fcCls('bd',s)}" style="opacity:.55;cursor:default" title="前のストリートのカード"><span>${r}</span><span class="cs ${SPCLS[s]}">${sym(s)}</span></div>`;
+      }else{
+        slots+=`<div class="${fcCls('bd',s)}" onclick="rmBoard(${i})" title="クリックで削除"><span>${r}</span><span class="cs ${SPCLS[s]}">${sym(s)}</span></div>`;
+      }
+    }else{
+      const a=S.pickerTgt==='bd';
+      slots+=`<div class="slot${a?' bd-act':''}" onclick="S.pickerTgt='bd';render()">${a?'▼':lbl[i]||''}</div>`;
+    }
+  }
+  let h=`<div style="background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:.6rem;margin-bottom:.65rem">
+<div class="card-row" style="margin-bottom:3px">${slots}</div>
+<div class="hint">${S.street==='turn'?'ターンカード(1枚)を追加してください':S.street==='river'?'リバーカード(1枚)を追加してください':'スロットをクリックして選択'}</div>
+</div>`;
+  if(S.pickerTgt==='bd'){
+    const used=allUsed();
+    h+=`<div class="cpw" style="margin-bottom:.65rem"><div class="cph"><span class="cpl cpl-bd">ボード選択中</span><button class="clr" onclick="rmNewBoardCards();render()">追加カードをクリア</button></div>`;
+    SUITS.forEach(([sy,s])=>{h+='<div class="rr">';RANKS.forEach(r=>{const k=r+s;h+=`<button class="cbb${used.includes(k)?' used':''}" onclick="addBoard('${k}')"><span>${r}</span><span class="cs ${SPCLS[s]}">${sy}</span></button>`;});h+='</div>';});
+    h+='</div>';
+  }
+  return h;
+}
+function rmBoard(i){
+  // 現在のストリートで追加したカードのみ削除可能
+  const prevCount={flop:0,turn:3,river:4}[S.street]||0;
+  if(i>=prevCount)S.board.splice(i,1);
+  render();
+}
+function rmNewBoardCards(){
+  // 現在のストリートで追加したカードのみクリア
+  const prevCount={flop:0,turn:3,river:4}[S.street]||0;
+  S.board=S.board.slice(0,prevCount);
+  S.pickerTgt=null;
+}
+function addBoard(k){if(!allUsed().includes(k)&&S.board.length<BMAX[S.street]){S.board.push(k);if(S.board.length===BMAX[S.street])S.pickerTgt=null;render();}}
+
+// ── Engine ──
+function mkDk(ex=[]){const d=[];RANKS.forEach(r=>['s','c','d','h'].forEach(s=>{const k=r+s;if(!ex.includes(k))d.push(k);}));return d;}
+function sh(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
+function xh(h){const r1=h[0],r2=h[1],sf=h[2],S4=['s','c','d','h'];
+  if(!sf)return[[r1+'s',r2+'c'],[r1+'s',r2+'d'],[r1+'s',r2+'h'],[r1+'c',r2+'d'],[r1+'c',r2+'h'],[r1+'d',r2+'h']];
+  if(sf==='s')return S4.map(s=>[r1+s,r2+s]);
+  const r=[];S4.forEach(s1=>S4.forEach(s2=>{if(s1!==s2)r.push([r1+s1,r2+s2]);}));return r;}
+function smpC(c,bl){for(let a=0;a<60;a++){const x=c[0|Math.random()*c.length];if(!x.some(k=>bl.includes(k)))return x;}return null;}
+function hRk(cards){
+  const cv=cards.map(k=>({rank:RV[k[0]],suit:k.slice(1)}));
+  const ranks=cv.map(c=>c.rank).sort((a,b)=>b-a);const suits=cv.map(c=>c.suit);
+  const rc={};ranks.forEach(r=>{rc[r]=(rc[r]||0)+1;});const sc={};suits.forEach(s=>{sc[s]=(sc[s]||0)+1;});
+  const cnt=Object.values(rc).sort((a,b)=>b-a);const fl=Object.values(sc).some(v=>v>=5);
+  let st=false,sH=0;const uR=[...new Set(ranks)];if(uR.includes(14))uR.push(1);
+  for(let i=0;i<=uR.length-5;i++){const sl=uR.slice(i,i+5);if(sl[0]-sl[4]===4&&new Set(sl).size===5){st=true;sH=sl[0];break;}}
+  if(fl&&st){const fs=Object.entries(sc).find(([,v])=>v>=5)[0];const fc=cv.filter(c=>c.suit===fs).map(c=>c.rank).sort((a,b)=>b-a);if(fc.includes(14))fc.push(1);let sh2=0;for(let i=0;i<=fc.length-5;i++){const sl=fc.slice(i,i+5);if(sl[0]-sl[4]===4&&new Set(sl).size===5){sh2=sl[0];break;}}if(sh2>=10)return[9,sh2];if(sh2>0)return[8,sh2];}
+  if(cnt[0]===4){const q=+Object.keys(rc).find(r=>rc[r]===4);const k=Math.max(...Object.keys(rc).filter(r=>rc[r]!==4).map(Number));return[7,q,k];}
+  if(cnt[0]===3&&cnt[1]===2){const t=+Object.keys(rc).find(r=>rc[r]===3);const p=+Object.keys(rc).find(r=>rc[r]===2);return[6,t,p];}
+  if(fl){const fs=Object.entries(sc).find(([,v])=>v>=5)[0];const fr=cv.filter(c=>c.suit===fs).map(c=>c.rank).sort((a,b)=>b-a).slice(0,5);return[5,...fr];}
+  if(st)return[4,sH];
+  if(cnt[0]===3){const t=+Object.keys(rc).find(r=>rc[r]===3);const k=Object.keys(rc).filter(r=>rc[r]!==3).map(Number).sort((a,b)=>b-a);return[3,t,...k];}
+  if(cnt[0]===2&&cnt[1]===2){const ps=Object.keys(rc).filter(r=>rc[r]===2).map(Number).sort((a,b)=>b-a);const k=Math.max(...Object.keys(rc).filter(r=>rc[r]===1).map(Number));return[2,...ps,k];}
+  if(cnt[0]===2){const p=+Object.keys(rc).find(r=>rc[r]===2);const k=Object.keys(rc).filter(r=>rc[r]!==2).map(Number).sort((a,b)=>b-a);return[1,p,...k];}
+  return[0,...ranks.slice(0,5)];}
+function b5(hand,brd){const all=[...hand,...brd];if(all.length<5)return hRk(all);let best=null;for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++){const five=all.filter((_,k)=>k!==i&&k!==j);const h=hRk(five);if(!best||cmp(h,best)>0)best=h;}return best;}
+function cmp(a,b){for(let i=0;i<Math.max(a.length,b.length);i++){const d=(a[i]||0)-(b[i]||0);if(d!==0)return d;}return 0;}
+function eqAB(hA,hB,brd){let w=0,t=0;const dk=mkDk([...hA,...hB,...brd]);const need=5-brd.length;for(let i=0;i<SPC;i++){const d=sh(dk);const bd=[...brd,...d.slice(0,need)];const c=cmp(b5(hA,bd),b5(hB,bd));if(c>0)w++;else if(c===0)t++;}return(w+t*.5)/SPC;}
+
+// ── EV builders ──
+// IP固定 × OOPコンボ → IP各ベットサイズのEV
+// 各rowにcallerIdxs/folderIdxsを持つ（次ストリートのレンジ絞り込みに使う）
+function buildIPEVs(ipH,oopC,oopEqs,pot,eff){
+  const tot=oopC.length;
+  const avgOOPeq=oopEqs.reduce((a,v)=>a+v,0)/tot;
+  const rows=[];
+  // チェック
+  rows.push({l:'チェック',b:0,ev:+((1-avgOOPeq)*pot).toFixed(2),sub:'チェックバック',callerIdxs:[...oopEqs.keys()],folderIdxs:[]});
+  bsizes(pot,eff).forEach(({l,b})=>{
+    const ct=b/(pot+b);
+    const calI=[],folI=[];oopEqs.forEach((eq,i)=>(eq>=ct?calI:folI).push(i));
+    const fr=folI.length/tot;
+    const avgCOOP=calI.length?calI.reduce((a,i)=>a+oopEqs[i],0)/calI.length:0;
+    const ev=fr*pot+(1-fr)*((1-avgCOOP)*(pot+2*b)-b);
+    rows.push({l,b,ev:+ev.toFixed(2),sub:`${b}BB / OOP Fold ${(fr*100).toFixed(0)}% (${folI.length}/${tot})`,callerIdxs:calI,folderIdxs:folI});
+  });
+  return rows;
+}
+
+// OOP固定 × IPコンボ → 各IPアクションに対するOOPのレスポンスEV
+// entries: [{ipAction, ipBet, actions:[{type,l,ev,ipCalI,newPot,betSize}]}]
+function buildOOPEVs(oopH,ipC,ipEqs,oopEqs,pot,eff){
+  const tot=ipC.length;
+  const avgOOPall=oopEqs.reduce((a,v)=>a+v,0)/tot;
+  const entries=[];
+
+  const makeOOPActsAfterBet=(ipBet)=>{
+    const pAfter=pot+ipBet;
+    const ipCT=ipBet/(pot+ipBet);
+    const ipCI=[],ipFI=[];ipEqs.forEach((eq,i)=>(eq>=ipCT?ipCI:ipFI).push(i));
+    const ipFR=ipFI.length/tot;
+    const avgOVC=ipCI.length?ipCI.reduce((a,i)=>a+oopEqs[i],0)/ipCI.length:avgOOPall;
+    const callEV=avgOVC*(pot+2*ipBet)-ipBet;
+    const acts=[
+      {type:'fold',l:'フォールド',ev:0,sub:'ポット放棄',ipCalI:[],newPot:0},
+      {type:'call',l:'コール',ev:+callEV.toFixed(2),sub:`${ipBet}BB コール`,ipCalI:ipCI,newPot:pot+2*ipBet},
+    ];
+    bsizes(pAfter,eff).forEach(({l,b:raise})=>{
+      if(raise<=ipBet)return;
+      const rct=(raise-ipBet)/(pAfter+(raise-ipBet));
+      const rCI=[],rFI=[];ipEqs.forEach((eq,i)=>(eq>=rct?rCI:rFI).push(i));
+      const rfr=rFI.length/tot;
+      const avgO=rCI.length?rCI.reduce((a,i)=>a+oopEqs[i],0)/rCI.length:avgOOPall;
+      const rev=rfr*pAfter+(1-rfr)*(avgO*(pot+2*raise)-raise);
+      acts.push({type:'raise',l,ev:+rev.toFixed(2),sub:`レイズ ${raise}BB / IP Fold ${(rfr*100).toFixed(0)}%`,ipCalI:rCI,newPot:pot+2*raise,betSize:raise,
+        // IP response to raise: compute IP's call/fold EV
+        ipRespFold:{ev:0,newPot:0},
+        ipRespCall:{ev:+(avgO*(pot+2*raise)-raise).toFixed(2),newPot:pot+2*raise,ipCalI:rCI},
+      });
+    });
+    return{ipAction:ipBet===0?'チェック':`ベット ${ipBet}BB`,ipBet,actions:acts};
+  };
+
+  // IP check entry
+  const checkActs=[];
+  const cbAct={type:'call',l:'チェックバック',ev:+(avgOOPall*pot).toFixed(2),sub:'ショーダウンへ',ipCalI:[...ipEqs.keys()],newPot:pot};
+  checkActs.push(cbAct);
+  // OOP donk bets after IP check
+  bsizes(pot,eff).forEach(({l,b})=>{
+    const ipCT=b/(pot+b);
+    const ipCI=[],ipFI=[];ipEqs.forEach((eq,i)=>(eq>=ipCT?ipCI:ipFI).push(i));
+    const ifr=ipFI.length/tot;
+    const avgO=ipCI.length?ipCI.reduce((a,i)=>a+oopEqs[i],0)/ipCI.length:avgOOPall;
+    const ev=ifr*pot+(1-ifr)*(avgO*(pot+2*b)-b);
+    checkActs.push({type:'raise',l,ev:+ev.toFixed(2),sub:`ドンクベット ${b}BB / IP Fold ${(ifr*100).toFixed(0)}%`,ipCalI:ipCI,newPot:pot+2*b,betSize:b,
+      ipRespFold:{ev:0,newPot:0},
+      ipRespCall:{ev:+(avgO*(pot+2*b)-b).toFixed(2),newPot:pot+2*b,ipCalI:ipCI},
+    });
+  });
+  entries.push({ipAction:'チェック',ipBet:0,actions:checkActs});
+
+  // IP bet entries
+  bsizes(pot,eff).forEach(({l,b})=>entries.push(makeOOPActsAfterBet(b)));
+  return entries;
+}
+
+// Both fixed
+function simIPEVs(ipEq,pot,eff){
+  const e=ipEq/100,oe=1-e;
+  const rows=[{l:'チェック',b:0,ev:+(e*pot).toFixed(2),sub:'チェックバック'}];
+  bsizes(pot,eff).forEach(({l,b})=>{
+    const ct=b/(pot+b);const fr=oe>=ct?0:Math.min(.95,1-oe/ct);
+    rows.push({l,b,ev:+(fr*pot+(1-fr)*(e*(pot+2*b)-b)).toFixed(2),sub:`${b}BB / OOP Fold ${(fr*100).toFixed(0)}%`});
+  });
+  return rows;
+}
+function simOOPAfterCheck(oopEq,pot,eff){
+  const e=oopEq/100,ie=1-e;
+  const acts=[{type:'call',l:'チェックバック',ev:+(e*pot).toFixed(2),sub:'ショーダウンへ'}];
+  bsizes(pot,eff).forEach(({l,b})=>{
+    const ct=b/(pot+b);const fr=ie>=ct?0:Math.min(.95,1-ie/ct);
+    acts.push({type:'raise',l,ev:+(fr*pot+(1-fr)*(e*(pot+2*b)-b)).toFixed(2),sub:`${b}BB / IP Fold ${(fr*100).toFixed(0)}%`});
+  });
+  return acts;
+}
+function simOOPAfterBet(oopEq,pot,ipBet,eff){
+  const e=oopEq/100,pA=pot+ipBet,ie=1-e;
+  const acts=[
+    {type:'fold',l:'フォールド',ev:0,sub:'ポット放棄'},
+    {type:'call',l:'コール',ev:+(e*(pot+2*ipBet)-ipBet).toFixed(2),sub:`${ipBet}BB コール`},
+  ];
+  bsizes(pA,eff).forEach(({l,b:raise})=>{
+    if(raise<=ipBet)return;
+    const ct=(raise-ipBet)/(pA+(raise-ipBet));const fr=ie>=ct?0:Math.min(.95,1-ie/ct);
+    acts.push({type:'raise',l,ev:+(fr*pA+(1-fr)*(e*(pot+2*raise)-raise)).toFixed(2),sub:`レイズ ${raise}BB / IP Fold ${(fr*100).toFixed(0)}%`});
+  });
+  return acts;
+}
+
+// ── Run sim: Phase1=MC equity, Phase2=combo EV (deferred) ──
+function runSim(){
+  const pg=document.querySelector('.prog');if(pg)pg.style.display='block';
+  const pl=document.getElementById('spl');if(pl){pl.style.display='block';pl.textContent='エクイティ計算中 (10,000回)...';}
+  const btn=document.getElementById('sim-start-btn');if(btn){btn.disabled=true;btn.textContent='計算中...';}
+
+  setTimeout(()=>{
+    const board=S.board,pot=S.pot,eff=S.eff,mode=em();
+    const ipH=S.ipMode==='fix'?S.ipHand:null;
+    const oopH=S.oopMode==='fix'?S.oopHand:null;
+    let ipC=S.ipCombos?S.ipCombos.filter(c=>!c.some(k=>board.includes(k)||(oopH&&oopH.includes(k)))):null;
+    let oopC=S.oopCombos?S.oopCombos.filter(c=>!c.some(k=>board.includes(k)||(ipH&&ipH.includes(k)))):null;
+
+    // Phase 1: MC equity (fast)
+    let wI=0,wO=0,tie=0,n=0;
+    for(let i=0;i<SIM_N;i++){
+      let iH=ipH,oH=oopH;
+      if(!iH){const c=smpC(ipC,[...board,...(oH||[])]);if(!c)continue;iH=c;}
+      if(!oH){const c=smpC(oopC,[...board,...iH]);if(!c)continue;oH=c;}
+      if(iH.some(k=>oH.includes(k)))continue;
+      const dk=sh(mkDk([...iH,...oH,...board]));const bd=[...board,...dk.slice(0,5-board.length)];
+      const c=cmp(b5(iH,bd),b5(oH,bd));if(c>0)wI++;else if(c<0)wO++;else tie++;n++;
+    }
+    const ipEq=(wI+tie*.5)/n*100,oopEq=100-ipEq;
+    const se=(Math.sqrt(ipEq/100*(1-ipEq/100)/n)*100).toFixed(2);
+
+    S.ipCombos=ipC;S.oopCombos=oopC;
+    // EV計算はまだしない — アクション選択後に計算
+    S.simResult={ipEq,oopEq,pot,eff,tie,N:n,se,mode,
+      ipEvR:null,oopEvR:null,ipEqs:null,oopEqs:null,
+      board:[...board],evReady:false};
+    S.actIP=null;S.actOOP=null;S.actIP2=null;
+
+    const pb=document.getElementById('spb');if(pb)pb.style.width='100%';
+    if(pl)pl.style.display='none';
+    if(pg)setTimeout(()=>{pg.style.display='none';if(pb)pb.style.width='0';},400);
+    if(btn){btn.disabled=false;btn.textContent='再計算';}
+
+    // Phase 2: コンボ別EV計算（少し遅延して実行、UIブロックしない）
+    if(mode==='ip'&&oopC||mode==='oop'&&ipC){
+      const cnt=mode==='ip'?oopC.length:ipC.length;
+      if(pl){pl.style.display='block';pl.textContent=`EV計算中 (${cnt}コンボ × ${SPC}回)...`;}
+      setTimeout(()=>{
+        if(mode==='ip'&&oopC){
+          const oopEqs2=oopC.map(c=>eqAB(c,ipH,board));
+          S.simResult.ipEvR=buildIPEVs(ipH,oopC,oopEqs2,pot,eff);
+          S.simResult.oopEqs=oopEqs2;
+        }else if(mode==='oop'&&ipC){
+          const ipEqs2=ipC.map(c=>eqAB(c,oopH,board));
+          const oopEqs2=ipEqs2.map(e=>1-e);
+          S.simResult.oopEvR=buildOOPEVs(oopH,ipC,ipEqs2,oopEqs2,pot,eff);
+          S.simResult.ipEqs=ipEqs2;S.simResult.oopEqs=oopEqs2;
+        }
+        S.simResult.evReady=true;
+        if(pl)pl.style.display='none';
+        renderSimResult(); // EV計算完了後に再描画
+      },30);
+    }else{
+      S.simResult.evReady=true;
+    }
+
+    renderSimResult(); // EQ先行表示（EV計算中でも表示）
+  },10);
+}
+
+// ── Render result ──
+function dIP(){if(S.ipMode==='fix')return`<span style="color:var(--iphl);font-weight:700">IP</span> ${S.ipHand.map(ci).join(' ')}`;return`<span style="color:var(--iphl);font-weight:700">IP</span> ${S.ipRng}(${(S.ipCombos||[]).length}コンボ)`;}
+function dOOP(){if(S.oopMode==='fix')return`<span style="color:var(--oophl);font-weight:700">OOP</span> ${S.oopHand.map(ci).join(' ')}`;return`<span style="color:var(--oophl);font-weight:700">OOP</span> ${S.oopRng}(${(S.oopCombos||[]).length}コンボ)`;}
+
+function renderSimResult(){
+  const r=S.simResult;if(!r)return;
+  const {ipEq,oopEq,pot,eff,tie,N,se,mode,ipEvR,oopEvR}=r;
+  const board=S.board;
+  const nextSt=STREETS[STREETS.indexOf(S.street)+1];
+  const myIsIP=S.myPos==='ip';
+
+  const evLoading=!r.evReady&&(mode==='ip'||mode==='oop');
+  let evSec='';
+
+  if(evLoading){
+    evSec=`<div style="font-size:11px;color:var(--t3);padding:.75rem;text-align:center">
+      <span style="display:inline-block;animation:spin 1s linear infinite;margin-right:6px">⟳</span>EV計算中... アクションボタンはもう少しお待ちください
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+  }else if(mode==='none'){
+    evSec=`<div class="warn">両者ともレンジ入力の場合は、どちらか一方を固定ハンドに変更するとEVが表示されます。</div>`;
+  }else if(mode==='ip'&&ipEvR){
+    // 自分がIP固定 → 自分(IP)のEVを表示、OOP先行アクション
+    evSec=buildIPSectionEV(r,nextSt);
+  }else if(mode==='oop'&&oopEvR){
+    // 自分がOOP固定 → 自分(OOP)のEVを表示、OOP先行アクション
+    evSec=buildOOPSectionEV(r,nextSt);
+  }else if(mode==='both'){
+    // 両固定 → myPosに応じた視点で表示
+    evSec=buildBothSectionEV(r,nextSt,myIsIP);
+  }else{
+    evSec=`<div class="warn">EV計算結果がありません。</div>`;
+  }
+
+  // EQの「自分/相手」表記をmyPosに合わせる
+  const myEq=myIsIP?ipEq:oopEq;const theirEq=myIsIP?oopEq:ipEq;
+  const myCol=myIsIP?'var(--iphl)':'var(--oophl)';const theirCol=myIsIP?'var(--oophl)':'var(--iphl)';
+  const myLbl=myIsIP?'自分(IP) EQ':'自分(OOP) EQ';const theirLbl=myIsIP?'相手(OOP) EQ':'相手(IP) EQ';
+
+  const boardStr=board.length?`<span style="color:var(--bdhl);font-weight:700">Board</span> ${board.map(ci).join(' ')}`:SJ[S.street];
+  const html=`<div class="rcard" id="result-card">
+  <div class="rch"><div class="rct">${SJ[S.street]} / ポット ${pot}BB / スタック ${eff}BB</div><div class="rcm">${N.toLocaleString()}サンプル SE ±${se}%</div></div>
+  <div class="rch2">${dIP()} &nbsp; ${dOOP()} &nbsp; ${boardStr}</div>
+  <div class="eqw">
+    <div class="eqn"><div class="eqv" style="color:var(--iphl)">${ipEq.toFixed(1)}%</div><div class="eql" style="color:var(--iphl)">IP EQ</div></div>
+    <div style="flex:1">
+      <div class="eqbar"><div style="width:${ipEq}%;height:100%;background:var(--ip)"></div><div style="width:${oopEq}%;height:100%;background:var(--oop)"></div></div>
+      <div class="eqm"><span>IP</span><span>チョップ ${(tie/N*100).toFixed(1)}%</span><span>OOP</span></div>
+    </div>
+    <div class="eqn" style="text-align:right"><div class="eqv" style="color:var(--oophl)">${oopEq.toFixed(1)}%</div><div class="eql" style="color:var(--oophl)">OOP EQ</div></div>
+  </div>
+  <div class="dvd"></div>
+  ${evSec}
+</div>`;
+  const el=document.getElementById('sres');if(el)el.innerHTML=html;
+}
+
+// CSS helpers
+const evCol=v=>v===null||v===undefined?'var(--t3)':v>0?'var(--grn)':v<0?'var(--red)':'var(--t3)';
+function evCard(name,sub,ev,cls,sel,onclick,bestTag){
+  const col=evCol(ev);const best=bestTag?`<div class="aev-best-tag">${bestTag}</div>`:'';
+  return`<button class="aev-btn ${cls}${sel?' sel':''}" onclick="${onclick}">${best}
+<div class="aev-name">${name}</div>
+${sub?`<div class="aev-size">${sub}</div>`:''}
+<div class="aev-ev" style="color:${col}">${ev!==null&&ev!==undefined?fmtEV(ev):'—'}</div>
+<div class="aev-ev-lbl">BB EV</div></button>`;
+}
+function proceedBtn(nextSt,newPot){
+  return`<button class="proceed-btn" style="margin-top:.65rem" onclick="commitAndProceed()">
+<div class="pb-left"><span class="pb-street">${SN[nextSt]}</span><span> へ進む</span></div>
+<div style="display:flex;align-items:center;gap:8px"><span class="pb-pot">次ポット: ${newPot}BB</span><span class="pb-arrow">→</span></div>
+</button>`;
+}
+function foldTerminal(){return'<div class="fold-terminal" style="margin-top:.5rem">ハンド終了（フォールド）</div>';}
+function sectionTitle(label,sub){
+  return`<div style="font-size:11px;font-weight:700;margin-bottom:.5rem">${label}<span style="font-weight:400;color:var(--t3);font-size:10px"> — ${sub}</span></div>`;
+}
+// 汎用セクションタイトル（OOP先行 → IPレスポンス等）
+function respTitle(who,sub){
+  const isMe=who==='me';const isOOP=who==='oop'||(isMe&&S.myPos==='oop')||(!isMe&&S.myPos==='ip');
+  const col=isOOP?'var(--oophl)':'var(--iphl)';
+  const name=isMe?`自分（${S.myPos.toUpperCase()}）`:(isOOP?'相手（OOP）':'相手（IP）');
+  return`<div style="font-size:11px;font-weight:700;color:${col};margin:.65rem 0 .5rem;padding-top:.65rem;border-top:1px dashed var(--b2)">${name}のレスポンス<span style="font-weight:400;color:var(--t3);font-size:10px"> — ${sub}</span></div>`;
+}
+function actTitle(who,sub){
+  const isOOP=who==='oop'||(who==='me'&&S.myPos==='oop')||(!who&&false);
+  const col=isOOP?'var(--oophl)':'var(--iphl)';
+  const name=who==='me'?`自分（${S.myPos.toUpperCase()}）`:who==='them'?`相手（${S.myPos==='ip'?'OOP':'IP'}）`:who==='oop'?'相手（OOP）':'相手（IP）';
+  return`<div style="font-size:11px;font-weight:700;color:${col};margin:.65rem 0 .5rem;padding-top:.65rem;border-top:1px dashed var(--b2)">${name}のアクション<span style="font-weight:400;color:var(--t3);font-size:10px"> — ${sub}</span></div>`;
+}
+// 旧ipRespTitle互換
+function respSub(sub){
+  return`<div style="font-size:11px;font-weight:700;margin:.65rem 0 .5rem;padding-top:.65rem;border-top:1px dashed var(--b2)">${sub}</div>`;
+}
+function ipRespTitle(sub){return respSub(sub);}
+
+
+// ── IP固定×OOPレンジ: 自分(IP)がアクション選択 ──
+function buildIPSectionEV(r,nextSt){
+  const {ipEvR,pot,eff,oopEq,ipEq}=r;
+  // 自分はIP固定。ポストフロップはOOPが先。
+  // 自分(IP)のEVはipEvRから読む（IPがベットしたときのEV）
+  const myIsIP=S.myPos==='ip'; // この関数ではIP固定なのでほぼ常にtrue
+  const me=`自分（IP）`;const them=`相手（OOP）`;
+
+  // OOPチェック時のIP各アクションEV
+  const ipActsAfterChk=ipEvR; // チェック/ベット各サイズ
+  const mxIP=Math.max(...ipActsAfterChk.map(x=>x.ev));
+
+  // OOPドンクベット各サイズのOOP期待値
+  const donkEVs=bsizes(pot,eff).map(({l,b})=>{
+    const oopEV=+((oopEq/100)*(pot+2*b)-b).toFixed(2); // 近似
+    return{l,b,ev:oopEV};
+  });
+  const allOOPEvs=[0,...donkEVs.map(x=>x.ev)]; // 0=チェック
+  const mxOOP=Math.max(...allOOPEvs);
+
+  // ① OOPのアクション
+  let h=sectionTitle(`<span style="color:var(--oophl)">${them}のアクション</span>`,'クリックで選択');
+  h+='<div class="aev-grid">';
+  // OOPチェック（EV = チェック後IPがチェックバックした場合のEV）
+  const oopChkEV=+((oopEq/100)*pot).toFixed(2);
+  h+=evCard('チェック',`${them}にアクションを渡す`,oopChkEV,'oop-chk',
+    S.actOOP?.type==='check'&&S.actOOP?.b===0,"selOOPact('check',0)",
+    oopChkEV===mxOOP?'MAX EV':null);
+  // OOPドンクベット
+  donkEVs.forEach(({l,b,ev})=>{
+    const sel=S.actOOP?.type==='bet'&&S.actOOP?.b===b;
+    h+=evCard(`ベット ${b}BB`,l,ev,'oop-bet',sel,`selOOPact('bet',${b})`,
+      ev===mxOOP?'MAX EV':null);
+  });
+  h+='</div>';
+  h+=`<div class="gn" style="margin-top:.5rem">相手レンジ全コンボ×${SPC}回MC（精度±3%以内）</div>`;
+  if(S.actOOP===null)return h;
+
+  const oopBet=S.actOOP.b;
+
+  if(oopBet===0){
+    // ② OOPチェック後: 自分(me)のアクション
+    h+=ipRespTitle(`OOPチェック後、${me}のアクション`);
+    h+='<div class="aev-grid">';
+    ipActsAfterChk.forEach(row=>{
+      const sel=(row.b===0&&S.actIP?.type==='check')||(row.b>0&&S.actIP?.type==='bet'&&S.actIP?.b===row.b);
+      const fn=row.b===0?"selIPact2('check',0)":`selIPact2('bet',${row.b})`;
+      h+=evCard(row.b===0?'チェックバック':`ベット ${row.b}BB`,
+        row.b===0?'両者チェック':row.l,
+        row.ev, row.b===0?'ip-chk':'ip-bet', sel, fn,
+        row.ev===mxIP?'MAX EV(IP)':null);
+    });
+    h+='</div>';
+    if(S.actIP===null)return h;
+    if(S.actIP.type==='check'){
+      // チェックチェック → 次へ
+      const np=pot;
+      if(nextSt)return h+proceedBtn(nextSt,np);
+      return h+`<div class="fold-terminal" style="background:var(--bdbg);border-color:var(--bd);color:var(--bdhl);margin-top:.5rem">ハンド終了 — ショーダウン / ポット ${np}BB</div>`;
+    }
+    // IPベット → ③ OOPのレスポンス（コール/フォールド）
+    const ipBet2=S.actIP.b;
+    const row2=ipEvR.find(x=>Math.abs(x.b-ipBet2)<0.05);
+    const avgOOPeq2=row2?.callerIdxs?.length&&r.oopEqs
+      ?row2.callerIdxs.reduce((a,i)=>a+r.oopEqs[i],0)/row2.callerIdxs.length
+      :oopEq/100;
+    const oopCallEV2=+(avgOOPeq2*(pot+2*ipBet2)-ipBet2).toFixed(2);
+    // レイズEV（近似）
+    const oopRaises=bsizes(pot+ipBet2,eff).filter(({b:raise})=>raise>ipBet2).map(({l,b:raise})=>({
+      l,raise,ev:+((oopEq/100)*(pot+2*raise)-raise).toFixed(2)
+    }));
+    const allOOPResps=[0,oopCallEV2,...oopRaises.map(x=>x.ev)];
+    const mxOOPResp=Math.max(...allOOPResps);
+    h+=respSub(`IP ${ipBet2}BBベット後、${them}のレスポンス`);
+    h+='<div class="aev-grid">';
+    h+=evCard('フォールド','ポット放棄',0,'oop-fold',
+      S.actIP2?.type==='fold',"selActIP2('fold',0)",0===mxOOPResp?'MAX EV':null);
+    h+=evCard(`コール ${ipBet2}BB`,'',oopCallEV2,'oop-call',
+      S.actIP2?.type==='call'&&S.actIP2?.b===ipBet2,`selActIP2('call',${ipBet2})`,oopCallEV2===mxOOPResp?'MAX EV':null);
+    oopRaises.forEach(({l,raise,ev})=>{
+      h+=evCard(`レイズ ${raise}BB`,l,ev,'oop-raise',
+        S.actIP2?.type==='raise'&&S.actIP2?.b===raise,`selActIP2('raise',${raise})`,ev===mxOOPResp?'MAX EV':null);
+    });
+    h+='</div>';
+    if(S.actIP2===null)return h;
+    if(S.actIP2.type==='fold')return h+foldTerminal();
+    if(S.actIP2.type==='raise'){
+      const oopRaise3=S.actIP2.b;
+      const ipCallEV3=+((ipEq/100)*(pot+2*oopRaise3)-oopRaise3).toFixed(2);
+      h+=respSub(`OOP ${oopRaise3}BBレイズ後、${me}のレスポンス`);
+      h+='<div class="aev-grid">';
+      h+=evCard('フォールド','ポット放棄',0,'ip-fold',S.actIP2?.finalType==='fold',`setFinalAct('fold')`,null);
+      h+=evCard(`コール ${oopRaise3}BB`,'',ipCallEV3,'ip-call',S.actIP2?.finalType==='call',`setFinalAct('call')`,ipCallEV3>0?'MAX EV(IP)':null);
+      h+='</div>';
+      if(!S.actIP2.finalType)return h;
+      if(S.actIP2.finalType==='fold')return h+foldTerminal();
+    }
+  }else{
+    // ② OOPドンクベット後: 自分（IP）のレスポンス
+    const oopDonk=oopBet;
+    const ipCallEV=+((ipEq/100)*(pot+2*oopDonk)-oopDonk).toFixed(2);
+    const ipRaises=bsizes(pot+oopDonk,eff).filter(({b:raise})=>raise>oopDonk).map(({l,b:raise})=>({
+      l,raise,ev:+((ipEq/100)*(pot+2*raise)-raise).toFixed(2)
+    }));
+    const allIPResps=[0,ipCallEV,...ipRaises.map(x=>x.ev)];
+    const mxIPResp=Math.max(...allIPResps.filter(v=>v>0));
+    h+=respSub(`OOP ${oopDonk}BBベット後、${me}のレスポンス`);
+    h+='<div class="aev-grid">';
+    h+=evCard('フォールド','ポット放棄',0,'ip-fold',
+      S.actIP?.type==='fold',"selIPact2('fold',0)",null);
+    h+=evCard(`コール ${oopDonk}BB`,'',ipCallEV,'ip-call',
+      S.actIP?.type==='call'&&S.actIP?.b===oopDonk,`selIPact2('call',${oopDonk})`,ipCallEV===mxIPResp?'MAX EV(IP)':null);
+    ipRaises.forEach(({l,raise,ev})=>{
+      h+=evCard(`レイズ ${raise}BB`,l,ev,'ip-raise',
+        S.actIP?.type==='raise'&&S.actIP?.b===raise,`selIPact2('raise',${raise})`,ev===mxIPResp?'MAX EV(IP)':null);
+    });
+    h+='</div>';
+    if(S.actIP===null)return h;
+    if(S.actIP.type==='fold')return h+foldTerminal();
+    if(S.actIP.type==='call'){
+      const np=+(pot+2*oopDonk).toFixed(1);
+      if(nextSt)return h+proceedBtn(nextSt,np);
+      return h+`<div class="fold-terminal" style="background:var(--bdbg);border-color:var(--bd);color:var(--bdhl);margin-top:.5rem">ハンド終了 — ショーダウン / ポット ${np}BB</div>`;
+    }
+    // IPレイズ → OOPの再レスポンス
+    const ipRaise4=S.actIP.b;
+    const oopCallEV4=+((oopEq/100)*(pot+2*ipRaise4)-ipRaise4).toFixed(2);
+    h+=respSub(`IP ${ipRaise4}BBレイズ後、${them}のレスポンス`);
+    h+='<div class="aev-grid">';
+    h+=evCard('フォールド','ポット放棄',0,'oop-fold',
+      S.actIP2?.type==='fold',"selActIP2('fold',0)",null);
+    h+=evCard(`コール ${ipRaise4}BB`,'',oopCallEV4,'oop-call',
+      S.actIP2?.type==='call',`selActIP2('call',${ipRaise4})`,oopCallEV4>0?'MAX EV':null);
+    h+='</div>';
+    if(S.actIP2===null)return h;
+    if(S.actIP2.type==='fold')return h+foldTerminal();
+  }
+
+  const np=calcNewPot();
+  if(nextSt)return h+proceedBtn(nextSt,np);
+  return h+`<div class="fold-terminal" style="background:var(--bdbg);border-color:var(--bd);color:var(--bdhl);margin-top:.5rem">ハンド終了 — ショーダウン / ポット ${np}BB</div>`;
+}
+
+function buildOOPSectionEV(r,nextSt){
+  const {oopEvR,pot,eff,ipEq,oopEq}=r;
+  const me=`自分（OOP）`;const them=`相手（IP）`;
+  const checkEnt=oopEvR.find(e=>e.ipBet===0);
+  const chkEV=checkEnt?.actions.find(a=>a.type==='call')?.ev??null;
+  const donkEVs=bsizes(pot,eff).map(({l,b})=>{
+    const act=checkEnt?.actions.find(a=>a.type==='raise'&&Math.abs((a.betSize||0)-b)<0.05);
+    return{l,b,ev:act?.ev??null,sub:act?.sub||''};
+  });
+  const allEvs=[chkEV,...donkEVs.map(x=>x.ev)].filter(v=>v!==null);
+  const mx=allEvs.length?Math.max(...allEvs):-Infinity;
+
+  let h=sectionTitle(`<span style="color:var(--oophl)">${me}のアクション</span>`,'クリックで選択');
+  h+='<div class="aev-grid">';
+  h+=evCard('チェック',`${them}にアクションを渡す`,chkEV,'oop-chk',
+    S.actOOP?.type==='check'&&S.actOOP?.b===0,"selOOPact('check',0)",chkEV===mx?'MAX EV':null);
+  donkEVs.forEach(({l,b,ev})=>{
+    const sel=S.actOOP?.type==='bet'&&S.actOOP?.b===b;
+    h+=evCard(`ベット ${b}BB`,l,ev,'oop-bet',sel,`selOOPact('bet',${b})`,ev===mx?'MAX EV':null);
+  });
+  h+='</div>';
+  h+=`<div class="gn" style="margin-top:.5rem">相手レンジ全コンボ×${SPC}回MC（精度±3%以内）</div>`;
+  if(S.actOOP===null)return h;
+  const oopBet=S.actOOP.b;
+
+  if(oopBet===0){
+    h+=respSub(`OOPチェック後、${them}のアクション`);
+    h+='<div class="aev-grid">';
+    h+=evCard('チェックバック','両者チェック',null,'ip-chk',
+      S.actIP?.type==='check',"selIPact2('check',0)",null);
+    bsizes(pot,eff).forEach(({l,b})=>{
+      const ent=oopEvR?.find(e=>Math.abs(e.ipBet-b)<0.05);
+      const oopCallEV=ent?.actions.find(a=>a.type==='call')?.ev??null;
+      const sel=S.actIP?.type==='bet'&&S.actIP?.b===b;
+      const sub=oopCallEV!==null?`${l} / OOPコールEV: ${fmtEV(oopCallEV)}BB`:l;
+      h+=evCard(`ベット ${b}BB`,sub,null,'ip-bet',sel,`selIPact2('bet',${b})`,null);
+    });
+    h+='</div>';
+    if(S.actIP===null)return h;
+    if(S.actIP.type==='check'){
+      if(nextSt)return h+proceedBtn(nextSt,pot);
+      return h+`<div class="fold-terminal" style="background:var(--bdbg);border-color:var(--bd);color:var(--bdhl);margin-top:.5rem">ハンド終了 — ショーダウン / ポット ${pot}BB</div>`;
+    }
+    const ipBet2=S.actIP.b;
+    const ent2=oopEvR?.find(e=>Math.abs(e.ipBet-ipBet2)<0.05);
+    const oopCallEV2=ent2?.actions.find(a=>a.type==='call')?.ev??+((oopEq/100)*(pot+2*ipBet2)-ipBet2).toFixed(2);
+    // OOPレイズEV: ent2のraiseアクション
+    const oopRaiseActs=bsizes(pot+ipBet2,eff)
+      .filter(({b:raise})=>raise>ipBet2)
+      .map(({l,b:raise})=>{
+        const ra=ent2?.actions.find(a=>a.type==='raise'&&Math.abs((a.betSize||a.raiseTo||0)-raise)<0.05);
+        return{l,raise,ev:ra?.ev??null};
+      });
+    const allOOPEvs2=[0,+oopCallEV2,...oopRaiseActs.map(x=>x.ev).filter(v=>v!==null)];
+    const mxOOP2=Math.max(...allOOPEvs2);
+    h+=respSub(`IP ${ipBet2}BBベット後、${me}のレスポンス`);
+    h+='<div class="aev-grid">';
+    h+=evCard('フォールド','ポット放棄',0,'oop-fold',
+      S.actIP2?.type==='fold',"selActIP2('fold',0)",0===mxOOP2?'MAX EV':null);
+    h+=evCard(`コール ${ipBet2}BB`,'',+oopCallEV2,'oop-call',
+      S.actIP2?.type==='call'&&S.actIP2?.b===ipBet2,`selActIP2('call',${ipBet2})`,+oopCallEV2===mxOOP2?'MAX EV':null);
+    oopRaiseActs.forEach(({l,raise,ev})=>{
+      h+=evCard(`レイズ ${raise}BB`,l,ev,'oop-raise',
+        S.actIP2?.type==='raise'&&S.actIP2?.b===raise,`selActIP2('raise',${raise})`,ev===mxOOP2?'MAX EV':null);
+    });
+    h+='</div>';
+    if(S.actIP2===null)return h;
+    if(S.actIP2.type==='fold')return h+foldTerminal();
+    if(S.actIP2.type==='raise'){
+      // OOPレイズ → IPの再レスポンス（コール/フォールド）
+      const oopRaise2=S.actIP2.b;
+      const ipCallEV3=+((ipEq/100)*(pot+2*oopRaise2)-oopRaise2).toFixed(2);
+      h+=respSub(`OOP ${oopRaise2}BBレイズ後、${them}のレスポンス`);
+      h+='<div class="aev-grid">';
+      h+=evCard('フォールド','ポット放棄',0,'ip-fold',
+        S.actIP2?.finalType==='fold',`setFinalAct('fold')`,null);
+      h+=evCard(`コール ${oopRaise2}BB`,'',ipCallEV3,'ip-call',
+        S.actIP2?.finalType==='call',`setFinalAct('call')`,ipCallEV3>0?'MAX EV(IP)':null);
+      h+='</div>';
+      if(!S.actIP2.finalType)return h;
+      if(S.actIP2.finalType==='fold')return h+foldTerminal();
+    }
+  }else{
+    const donkAct=checkEnt?.actions.find(a=>a.type==='raise'&&Math.abs((a.betSize||0)-oopBet)<0.05);
+    const ipCallEV=donkAct?.ipRespCall?.ev??+((ipEq/100)*(pot+2*oopBet)-oopBet).toFixed(2);
+    h+=respSub(`OOP ${oopBet}BBベット後、${them}のレスポンス`);
+    h+='<div class="aev-grid">';
+    h+=evCard('フォールド','ポット放棄',0,'ip-fold',
+      S.actIP?.type==='fold',"selIPact2('fold',0)",null);
+    h+=evCard(`コール ${oopBet}BB`,'',+ipCallEV,'ip-call',
+      S.actIP?.type==='call'&&S.actIP?.b===oopBet,`selIPact2('call',${oopBet})`,null);
+    bsizes(pot+oopBet,eff).forEach(({l,b:raise})=>{
+      if(raise<=oopBet)return;
+      h+=evCard(`レイズ ${raise}BB`,l,null,'ip-raise',
+        S.actIP?.type==='raise'&&S.actIP?.b===raise,`selIPact2('raise',${raise})`,null);
+    });
+    h+='</div>';
+    if(S.actIP===null)return h;
+    if(S.actIP.type==='fold')return h+foldTerminal();
+    if(S.actIP.type==='call'){
+      const np=+(pot+2*oopBet).toFixed(1);
+      if(nextSt)return h+proceedBtn(nextSt,np);
+      return h+`<div class="fold-terminal" style="background:var(--bdbg);border-color:var(--bd);color:var(--bdhl);margin-top:.5rem">ハンド終了 — ショーダウン / ポット ${np}BB</div>`;
+    }
+    const ipRaise=S.actIP.b;
+    const oopCallEV3=+((oopEq/100)*(pot+2*ipRaise)-ipRaise).toFixed(2);
+    h+=respSub(`IP ${ipRaise}BBレイズ後、${me}のレスポンス`);
+    h+='<div class="aev-grid">';
+    h+=evCard('フォールド','ポット放棄',0,'oop-fold',
+      S.actIP2?.type==='fold',"selActIP2('fold',0)",null);
+    h+=evCard(`コール ${ipRaise}BB`,'',oopCallEV3,'oop-call',
+      S.actIP2?.type==='call',`selActIP2('call',${ipRaise})`,null);
+    h+='</div>';
+    if(S.actIP2===null)return h;
+    if(S.actIP2.type==='fold')return h+foldTerminal();
+  }
+  const np=calcNewPot();
+  if(nextSt)return h+proceedBtn(nextSt,np);
+  return h+`<div class="fold-terminal" style="background:var(--bdbg);border-color:var(--bd);color:var(--bdhl);margin-top:.5rem">ハンド終了 — ショーダウン / ポット ${np}BB</div>`;
+}
+
+function buildBothSectionEV(r,nextSt,myIsIP){
+  const {ipEq,oopEq,pot,eff}=r;
+  const myIsIPLocal=myIsIP!==undefined?myIsIP:S.myPos==='ip';
+  const me=myIsIPLocal?'自分（IP）':'自分（OOP）';const them=myIsIPLocal?'相手（OOP）':'相手（IP）';
+  const myCol=myIsIPLocal?'var(--iphl)':'var(--oophl)';const themCol=myIsIPLocal?'var(--oophl)':'var(--iphl)';
+  const oopEvs=simOOPAfterCheck(oopEq,pot,eff);
+  const chkEV=oopEvs.find(a=>a.type==='call')?.ev??null;
+  const donkEVs=bsizes(pot,eff).map(({l,b})=>({l,b,ev:oopEvs.find(a=>a.l===l)?.ev??null}));
+  const allEvs=[chkEV,...donkEVs.map(x=>x.ev)].filter(v=>v!==null);
+  const mx=allEvs.length?Math.max(...allEvs):-Infinity;
+
+  // OOPが先行するが、myPosによって「自分/相手」が変わる
+  const firstActorCol=myIsIPLocal?'var(--oophl)':'var(--oophl)'; // OOP先行は常にOOP色
+  const firstActorCls=myIsIPLocal?'oop-chk':'oop-chk';
+  let h=sectionTitle(`<span style="color:${firstActorCol}">${myIsIPLocal?them:me}のアクション</span>`,'クリックで選択');
+  h+='<div class="aev-grid">';
+  h+=evCard('チェック',`${myIsIPLocal?me:them}にアクションを渡す`,chkEV,'oop-chk',
+    S.actOOP?.type==='check'&&S.actOOP?.b===0,"selOOPact('check',0)",chkEV===mx?'MAX EV':null);
+  donkEVs.forEach(({l,b,ev})=>{
+    const sel=S.actOOP?.type==='bet'&&S.actOOP?.b===b;
+    h+=evCard(`ベット ${b}BB`,l,ev,'oop-bet',sel,`selOOPact('bet',${b})`,ev===mx?'MAX EV':null);
+  });
+  h+='</div>';
+  h+='<div class="gn" style="margin-top:.5rem">OOPエクイティからGTOフォールド率を計算</div>';
+  if(S.actOOP===null)return h;
+  const oopBet=S.actOOP.b;
+
+  if(oopBet===0){
+    h+=respSub(`OOPチェック後、${them}のアクション`);
+    const ipEvs=simIPEVs(ipEq,pot,eff);const mxIP=Math.max(...ipEvs.map(x=>x.ev));
+    h+='<div class="aev-grid">';
+    ipEvs.forEach(x=>{
+      const sel=x.b===0?(S.actIP?.type==='check'):(S.actIP?.type==='bet'&&S.actIP?.b===x.b);
+      const fn=x.b===0?"selIPact2('check',0)":`selIPact2('bet',${x.b})`;
+      h+=evCard(x.b===0?'チェックバック':`ベット ${x.b}BB`,
+        x.b===0?'両者チェック':x.l,x.ev,x.b===0?'ip-chk':'ip-bet',sel,fn,
+        x.ev===mxIP?'MAX EV(IP)':null);
+    });
+    h+='</div>';
+    if(S.actIP===null)return h;
+    if(S.actIP.type==='check'){
+      if(nextSt)return h+proceedBtn(nextSt,pot);
+      return h+`<div class="fold-terminal" style="background:var(--bdbg);border-color:var(--bd);color:var(--bdhl);margin-top:.5rem">ハンド終了 — ショーダウン / ポット ${pot}BB</div>`;
+    }
+    const ipBet2=S.actIP.b;
+    const oopResps=simOOPAfterBet(oopEq,pot,ipBet2,eff);
+    const mxOOP=Math.max(...oopResps.map(a=>a.ev));
+    h+=respSub(`IP ${ipBet2}BBベット後、${me}のレスポンス`);
+    h+='<div class="aev-grid">';
+    oopResps.filter(a=>a.type==='fold'||a.type==='call').forEach(a=>{
+      const sel=a.type==='fold'?(S.actIP2?.type==='fold'):(S.actIP2?.type==='call');
+      const fn=a.type==='fold'?"selActIP2('fold',0)":`selActIP2('call',${ipBet2})`;
+      h+=evCard(a.l,'',a.ev,a.type==='fold'?'oop-fold':'oop-call',sel,fn,a.ev===mxOOP?'MAX EV':null);
+    });
+    h+='</div>';
+    if(S.actIP2===null)return h;
+    if(S.actIP2.type==='fold')return h+foldTerminal();
+  }else{
+    h+=respSub(`OOP ${oopBet}BBベット後、${them}のレスポンス`);
+    const ipCallEV=+((ipEq/100)*(pot+2*oopBet)-oopBet).toFixed(2);
+    const ipResps=[
+      {type:'fold',l:'フォールド',ev:0},{type:'call',l:`コール ${oopBet}BB`,ev:ipCallEV},
+      ...bsizes(pot+oopBet,eff).filter(({b:raise})=>raise>oopBet).map(({l,b:raise})=>({
+        type:'raise',l:`レイズ ${raise}BB (${l})`,ev:+((ipEq/100)*(pot+2*raise)-raise).toFixed(2),b:raise}))
+    ];
+    const mxIP=Math.max(...ipResps.map(a=>a.ev));
+    h+='<div class="aev-grid">';
+    ipResps.forEach(a=>{
+      const isFold=a.type==='fold';const isCall=a.type==='call';const isRaise=a.type==='raise';
+      const sel=isFold?(S.actIP?.type==='fold'):isCall?(S.actIP?.type==='call'):(S.actIP?.type==='raise'&&S.actIP?.b===a.b);
+      const fn=isFold?"selIPact2('fold',0)":isCall?`selIPact2('call',${oopBet})`:`selIPact2('raise',${a.b})`;
+      const cls=isFold?'ip-fold':isCall?'ip-call':'ip-raise';
+      h+=evCard(a.l,'',a.ev,cls,sel,fn,a.ev===mxIP&&!isFold?'MAX EV(IP)':null);
+    });
+    h+='</div>';
+    if(S.actIP===null)return h;
+    if(S.actIP.type==='fold')return h+foldTerminal();
+    if(S.actIP.type==='call'){
+      const np=+(pot+2*oopBet).toFixed(1);
+      if(nextSt)return h+proceedBtn(nextSt,np);
+      return h+`<div class="fold-terminal" style="background:var(--bdbg);border-color:var(--bd);color:var(--bdhl);margin-top:.5rem">ハンド終了 — ショーダウン / ポット ${np}BB</div>`;
+    }
+    const ipRaise=S.actIP.b;
+    const oopCallEV3=+((oopEq/100)*(pot+2*ipRaise)-ipRaise).toFixed(2);
+    const oopFoldEV=0;
+    h+=respSub(`IP ${ipRaise}BBレイズ後、${me}のレスポンス`);
+    const respArr=[{type:'fold',l:'フォールド',ev:0},{type:'call',l:`コール ${ipRaise}BB`,ev:oopCallEV3}];
+    const mxOOP3=Math.max(...respArr.map(a=>a.ev));
+    h+='<div class="aev-grid">';
+    respArr.forEach(a=>{
+      const sel=a.type==='fold'?(S.actIP2?.type==='fold'):(S.actIP2?.type==='call');
+      const fn=a.type==='fold'?"selActIP2('fold',0)":`selActIP2('call',${ipRaise})`;
+      h+=evCard(a.l,'',a.ev,a.type==='fold'?'oop-fold':'oop-call',sel,fn,a.ev===mxOOP3?'MAX EV':null);
+    });
+    h+='</div>';
+    if(S.actIP2===null)return h;
+    if(S.actIP2.type==='fold')return h+foldTerminal();
+  }
+  const np=calcNewPot();
+  if(nextSt)return h+proceedBtn(nextSt,np);
+  return h+`<div class="fold-terminal" style="background:var(--bdbg);border-color:var(--bd);color:var(--bdhl);margin-top:.5rem">ハンド終了 — ショーダウン / ポット ${np}BB</div>`;
+}
+
+// State updaters
+function selIPact(b){S.actOOP={type:b===0?'check':'call',b};S.actIP=null;S.actIP2=null;renderSimResult();}
+function selOOPact(type,b){S.actOOP={type,b};S.actIP=null;S.actIP2=null;renderSimResult();}
+function selIPact2(type,b){S.actIP={type,b};S.actIP2=null;renderSimResult();}
+function selActIP2(type,b){S.actIP2={type,b,finalType:null};renderSimResult();}
+function setFinalAct(type){if(S.actIP2)S.actIP2.finalType=type;renderSimResult();}
+function selActOOP(type,l,b){S.actOOP={type,l,b};S.actIP=null;S.actIP2=null;renderSimResult();}
+function selActIP(type,l,b){S.actIP={type,l,b};S.actIP2=null;renderSimResult();}
+function selActIP2Legacy(type,b){S.actIP2={type,b,finalType:null};renderSimResult();}
+
+
+function canCommit(){
+  // S.actOOP = OOPのアクション（check/bet）
+  // S.actIP  = IPのレスポンス（check=チェックバック/bet/call/fold/raise）
+  // IP固定×OOPレンジ(mode==='ip')のときは S.actOOP.type==='call'でIPがベットした事を表す
+  if(!S.actOOP)return false;
+  const r=S.simResult;const mode=r?.mode;
+  const oopT=S.actOOP.type;
+
+  if(mode==='ip'){
+    // OOP先行: actOOP=OOPのアクション, actIP=IPのレスポンス, actIP2=OOPの再レスポンス
+    if(!S.actOOP)return false;
+    const oopB=S.actOOP.b;
+    if(oopB===0){
+      // OOPチェック → IPのアクション必要
+      if(!S.actIP)return false;
+      if(S.actIP.type==='check')return true; // チェックチェック
+      if(S.actIP.type==='bet'){
+        // IPベット → OOPのレスポンス必要
+        if(!S.actIP2)return false;
+        if(S.actIP2.type==='fold')return false;
+        if(S.actIP2.type==='call')return true;
+        if(S.actIP2.type==='raise')return S.actIP2.finalType==='call';
+        return false;
+      }
+      return false;
+    }else{
+      // OOPドンク → IPのレスポンス必要
+      if(!S.actIP)return false;
+      if(S.actIP.type==='fold')return false;
+      if(S.actIP.type==='call')return true;
+      if(S.actIP.type==='raise'){
+        if(!S.actIP2)return false;
+        return S.actIP2.type==='call';
+      }
+      return false;
+    }
+  }
+
+  // OOP固定 or 両固定: OOP先行 → IPレスポンス
+  if(oopT==='check'){
+    // OOPチェック → IPのレスポンス必要
+    if(!S.actIP)return false;
+    const t=S.actIP.type;
+    if(t==='check'||t==='call')return true; // チェックバック or コール(未使用)
+    if(t==='bet')return true;  // OOPチェック→IPベット→(OOPコール前提)
+    if(t==='fold')return false;
+    return false;
+  }
+  if(oopT==='bet'){
+    if(!S.actIP)return false;
+    const t=S.actIP.type;
+    if(t==='fold')return false;
+    if(t==='call')return true;
+    if(t==='raise'){
+      if(!S.actIP2)return false;
+      return S.actIP2.type==='call'; // OOPがコール
+    }
+    return false;
+  }
+  // OOPチェック → IPベット → OOPレイズ → IPレスポンス
+  if(oopT==='check'){
+    if(!S.actIP)return false;
+    if(S.actIP.type==='check')return true;
+    if(S.actIP.type==='bet'){
+      if(!S.actIP2)return false;
+      if(S.actIP2.type==='fold')return false;
+      if(S.actIP2.type==='call')return true;
+      if(S.actIP2.type==='raise'){
+        return S.actIP2.finalType==='call';
+      }
+    }
+    return false;
+  }
+  return false;
+}
+
+function calcNewPot(){
+  const r=S.simResult;const pot=r?.pot||S.pot;
+  if(!S.actOOP)return pot;
+  const mode=r?.mode;
+  const oopT=S.actOOP.type,oopB=S.actOOP.b;
+
+  if(mode==='ip'){
+    if(!S.actOOP)return pot;
+    const oopB=S.actOOP.b;
+    if(oopB===0){
+      // OOPチェック → IPアクション
+      if(!S.actIP)return pot;
+      if(S.actIP.type==='check')return pot;
+      if(S.actIP.type==='bet'){
+        const ipBet=S.actIP.b;
+        if(!S.actIP2||S.actIP2.type==='call')return +(pot+2*ipBet).toFixed(1);
+        if(S.actIP2.type==='raise')return +(pot+2*S.actIP2.b).toFixed(1);
+        return +(pot+2*ipBet).toFixed(1);
+      }
+      return pot;
+    }else{
+      // OOPドンク → IPレスポンス
+      if(!S.actIP||S.actIP.type==='call')return +(pot+2*oopB).toFixed(1);
+      if(S.actIP.type==='raise')return +(pot+2*S.actIP.b).toFixed(1);
+      return pot;
+    }
+  }
+  if(oopT==='check'){
+    if(!S.actIP)return pot;
+    if(S.actIP.type==='check')return pot;
+    if(S.actIP.type==='bet'){
+      const ipBet=S.actIP.b;
+      if(!S.actIP2)return +(pot+2*ipBet).toFixed(1);
+      if(S.actIP2.type==='call')return +(pot+2*ipBet).toFixed(1);
+      if(S.actIP2.type==='raise')return +(pot+2*S.actIP2.b).toFixed(1); // OOPレイズ→IPコール前提
+      return +(pot+2*ipBet).toFixed(1);
+    }
+    return pot;
+  }
+  if(oopT==='bet'){
+    if(!S.actIP)return pot;
+    if(S.actIP.type==='call')return +(pot+2*oopB).toFixed(1);
+    if(S.actIP.type==='raise')return +(pot+2*S.actIP.b).toFixed(1);
+    return pot;
+  }
+  return pot;
+}
+
+function commitAndProceed(){
+  const r=S.simResult;if(!r||!canCommit())return;
+  const oopAct=S.actOOP,ipAct=S.actIP,ipAct2=S.actIP2;
+  const pot=r.pot,mode=r.mode;
+  const newPot=calcNewPot();
+  let label='',cls='c';
+
+  if(mode==='ip'){
+    const oopB=S.actOOP?.b||0;
+    if(oopB===0){
+      if(ipAct?.type==='check'){label='チェック/チェックバック';cls='c';}
+      else if(ipAct?.type==='bet'&&(!ipAct2||ipAct2.type==='call')){label=`OOPチェック → IP ${ipAct.b}BB → OOPコール`;cls='b';}
+      else if(ipAct?.type==='bet'&&ipAct2?.type==='raise'){label=`OOPチェック → IP ${ipAct.b}BB → OOPレイズ ${ipAct2.b}BB → IPコール`;cls='ob';}
+    }else{
+      if(ipAct?.type==='call'){label=`OOPドンク ${oopB}BB → IPコール`;cls='ob';}
+      else if(ipAct?.type==='raise'){label=`OOPドンク ${oopB}BB → IPレイズ ${ipAct.b}BB → OOPコール`;cls='b';}
+    }
+  }else if(oopAct.type==='check'&&ipAct?.type==='check'){label='チェック/チェックバック';cls='c';}
+  else if(oopAct.type==='check'&&ipAct?.type==='bet'&&(!ipAct2||ipAct2.type==='call')){label=`OOPチェック → IP ${ipAct.b}BB → OOPコール`;cls='b';}
+  else if(oopAct.type==='check'&&ipAct?.type==='bet'&&ipAct2?.type==='raise'){label=`OOPチェック → IP ${ipAct.b}BB → OOPレイズ ${ipAct2.b}BB → IPコール`;cls='ob';}
+  else if(oopAct.type==='bet'&&ipAct?.type==='call'){label=`OOP ${oopAct.b}BB → IPコール`;cls='ob';}
+  else if(oopAct.type==='bet'&&ipAct?.type==='raise'){label=`OOP ${oopAct.b}BB → IPレイズ ${ipAct.b}BB → OOPコール`;cls='b';}
+
+  // Range filtering
+  let newIPcombos=S.ipCombos?[...S.ipCombos]:null;
+  let newOOPcombos=S.oopCombos?[...S.oopCombos]:null;
+
+  if(mode==='ip'&&r.ipEvR&&S.oopCombos){
+    const oopB=S.actOOP?.b||0;
+    if(oopB===0){
+      // OOPチェック → IPベット → OOPコール: OOPのコール可能コンボに絞る
+      if(ipAct?.type==='bet'){
+        const row=r.ipEvR.find(x=>Math.abs(x.b-ipAct.b)<0.05);
+        if(row?.callerIdxs)newOOPcombos=row.callerIdxs.map(i=>S.oopCombos[i]);
+      }
+      // チェックチェック: そのまま
+    }else{
+      // OOPドンク → IPコール: OOPレンジはそのまま（IP固定なのでIP絞りなし）
+      // OOPドンク → IPレイズ → OOPコール: OOPレンジはそのまま
+    }
+  }else if(mode==='oop'&&r.oopEvR&&S.ipCombos){
+    const ent0=r.oopEvR.find(e=>e.ipBet===0);
+    if(oopAct.type==='check'&&ipAct?.type==='check'){
+      const cb=ent0?.actions.find(a=>a.type==='call');
+      if(cb?.ipCalI)newIPcombos=cb.ipCalI.map(i=>S.ipCombos[i]);
+    }else if(oopAct.type==='check'&&ipAct?.type==='bet'){
+      const ent=r.oopEvR.find(e=>Math.abs(e.ipBet-ipAct.b)<0.05);
+      const callAct=ent?.actions.find(a=>a.type==='call');
+      if(callAct?.ipCalI)newIPcombos=callAct.ipCalI.map(i=>S.ipCombos[i]);
+    }else if(oopAct.type==='bet'&&ipAct?.type==='call'){
+      const donkAct=ent0?.actions.find(a=>a.type==='raise'&&Math.abs((a.betSize||0)-oopAct.b)<0.05);
+      if(donkAct?.ipCalI)newIPcombos=donkAct.ipCalI.map(i=>S.ipCombos[i]);
+    }else if(oopAct.type==='bet'&&ipAct?.type==='raise'){
+      const donkAct=ent0?.actions.find(a=>a.type==='raise'&&Math.abs((a.betSize||0)-oopAct.b)<0.05);
+      if(donkAct?.ipRespCall?.ipCalI)newIPcombos=donkAct.ipRespCall.ipCalI.map(i=>S.ipCombos[i]);
+    }
+  }
+
+  S.history.push({street:S.street,label,cls,potBefore:pot,potAfter:newPot,board:[...S.board],ipCombos:S.ipCombos?[...S.ipCombos]:null,oopCombos:S.oopCombos?[...S.oopCombos]:null});
+  S.ipCombos=newIPcombos;
+  S.oopCombos=newOOPcombos;
+  S.pot=newPot;
+  const nextSt=STREETS[STREETS.indexOf(S.street)+1];
+  if(!nextSt){
+    // リバー終了 — 結果を表示したままにする
+    S.actOOP=null;S.actIP=null;S.actIP2=null;
+    renderBC();
+    const el=document.getElementById('sres');
+    if(el){const card=el.querySelector('.rcard');if(card)card.innerHTML+=`<div class="fold-terminal" style="margin-top:.75rem;background:var(--bdbg);border-color:var(--bd);color:var(--bdhl)">ハンド終了 — ショーダウン / ポット ${newPot}BB</div>`;}
+    return;
+  }
+  S.street=nextSt;
+  S.pickerTgt=null;S.simResult=null;S.actOOP=null;S.actIP=null;S.actIP2=null;
+  renderBC();render();
+}
+
+// ── EV grid renderers ──
+function evGrid(rows){
+  const mx=Math.max(...rows.map(r=>r.ev));
+  return`<div class="evg">${rows.map(r=>{const best=r.ev===mx;const col=r.ev>0?'var(--grn)':r.ev<0?'var(--red)':'var(--t3)';
+  return`<div class="evc${best?' best':''}">
+${best?'<div class="btag">MAX EV</div>':''}
+<div class="evl">${r.l||r.label}</div>
+<div class="evv" style="color:${col}">${fmtEV(r.ev)}<span style="font-size:9px;font-weight:400"> BB</span></div>
+<div class="evs">${r.sub||''}</div></div>`;}).join('')}</div>`;}
+function oopGrid(acts){
+  const mx=Math.max(...acts.map(a=>a.ev));
+  return`<div class="oopg">${acts.map(a=>{const best=a.ev===mx;const col=a.ev>0?'var(--grn)':a.ev<0?'var(--red)':'var(--t3)';
+  const tc=a.type==='fold'?'otf':a.type==='call'?'otc':'otr';const tl=a.type==='fold'?'FOLD':a.type==='call'?'CALL':'BET/RAISE';
+  return`<div class="oopc${best?' best':''}">
+${best?'<div class="btag">MAX EV</div>':''}
+<span class="oty ${tc}">${tl}</span>
+<div class="ooplbl">${a.l||a.label}</div>
+<div class="oopv" style="color:${col}">${fmtEV(a.ev)}<span style="font-size:9px;font-weight:400"> BB</span></div>
+<div class="oops">${a.sub||''}</div></div>`;}).join('')}</div>`;}
+
+function setPOV(p){
+  document.getElementById('pv-ip')?.classList.toggle('on',p==='ip');
+  document.getElementById('pv-oop')?.classList.toggle('on',p==='oop');
+  document.getElementById('ev-ip')&&(document.getElementById('ev-ip').style.display=p==='ip'?'':'none');
+  document.getElementById('ev-oop')&&(document.getElementById('ev-oop').style.display=p==='oop'?'':'none');
+}
+function selBchip(l,b){
+  S.actIP={l,b};
+  document.querySelectorAll('.bchip').forEach(c=>c.classList.toggle('on',+c.textContent===b||(b===0&&c.textContent==='チェック')));
+  const r=S.simResult;if(!r)return;
+  const area=document.getElementById('oop-acts');if(!area)return;
+  const lbl=document.getElementById('oop-acts-lbl');
+  if(lbl)lbl.textContent=b===0?'IPチェック後 — OOPのアクション別EV':`IP ${b}BBベット後 — OOPのアクション別EV`;
+  const rows=b===0?simOOPAfterCheck(r.oopEq,r.pot,r.eff):simOOPAfterBet(r.oopEq,r.pot,b,r.eff);
+  area.innerHTML=oopGrid(rows);
+}
+function selBchipOOP(l,b){
+  S.actIP={l,b};
+  document.querySelectorAll('.bchip').forEach(c=>c.classList.toggle('on',+c.textContent===b||(b===0&&c.textContent==='チェック')));
+  const r=S.simResult;if(!r||!r.oopEvR)return;
+  const area=document.getElementById('oop-acts');if(!area)return;
+  const lbl=area.previousElementSibling;
+  if(lbl&&lbl.tagName==='DIV')lbl.textContent=b===0?'相手（IP）がチェックしてきた場合 — 自分（OOP）のアクション別EV':`相手（IP）が ${b}BB ベットしてきた場合 — 自分（OOP）のアクション別EV`;
+  const ent=r.oopEvR.find(e=>(b===0&&e.ipBet===0)||(Math.abs(e.ipBet-b)<0.05));
+  if(ent)area.innerHTML=oopGrid(ent.actions);
+}
+
+// ── Next street inline (ターン/リバーはフロップの下に展開) ──
+// 現在はページ遷移方式だが、renderSimResultの後にinlineで追加する
+// commitAndProceedでS.streetが変わり、renderStreetStepが呼ばれる形
+
+function resetAll(){
+  S.phase='setup';S.street='pre';S.board=[];S.history=[];
+  S.ipHand=[];S.oopHand=[];S.ipRng=null;S.oopRng=null;
+  S.ipCombos=null;S.oopCombos=null;
+  S.simResult=null;S.actOOP=null;S.actIP=null;S.actIP2=null;S.pickerTgt=null;
+  renderBC();render();
+}
+function goBack(){
+  if(S.history.length>0){
+    const prev=S.history.pop();
+    S.street=prev.street;S.pot=prev.potBefore;S.board=[...prev.board];
+    if(prev.ipCombos!==null)S.ipCombos=prev.ipCombos;
+    if(prev.oopCombos!==null)S.oopCombos=prev.oopCombos;
+    S.simResult=null;S.actIP=null;S.actOOP=null;S.actIP2=null;S.pickerTgt=null;
+    renderBC();render();
+  }else{
+    S.phase='setup';S.street='pre';S.board=[];S.history=[];S.ipCombos=null;S.oopCombos=null;
+    renderBC();render();
+  }
+}
+
+render();
+</script>
+
+<!-- 計算手法セクション -->
+<div class="wrap" style="padding-top:0;padding-bottom:3rem">
+<details class="method-details">
+  <summary class="method-summary">
+    <span class="method-summary-icon">算</span>
+    <span class="method-summary-title">計算手法について</span>
+    <span class="method-summary-sub">本ツールの計算モデルと限界</span>
+    <span class="method-chevron">▾</span>
+  </summary>
+  <div class="method-body">
+
+    <div class="method-section">
+      <div class="method-section-title">エクイティ計算 — モンテカルロ法</div>
+      <div class="method-text">
+        エクイティ（勝率）は<strong>モンテカルロ・シミュレーション</strong>で計算しています。指定されたボードに対して残りのデッキからランダムにカードをめくり、ショーダウン時の勝敗を集計します。サンプル数は<strong>10,000回</strong>で、標準誤差はおよそ±0.5%以内です。
+      </div>
+      <div class="method-formula">
+        EQ = (勝利数 + チョップ数 × 0.5) ÷ 試行回数
+      </div>
+    </div>
+
+    <div class="method-section">
+      <div class="method-section-title">レンジEV計算 — コンボ別モンテカルロ</div>
+      <div class="method-text">
+        相手がレンジ入力の場合、レンジ内の<strong>全コンボに対して各300回のMC</strong>を実行し、コンボごとのエクイティを算出します。その後、GTOポットオッズを閾値としてコール/フォールドを判定します。
+      </div>
+      <div class="method-formula">
+        コール閾値 = ベット額 ÷ (ポット + ベット額)<br>
+        フォールド率 = EQ &lt; 閾値 のコンボ数 ÷ 総コンボ数
+      </div>
+    </div>
+
+    <div class="method-section">
+      <div class="method-section-title">ベットEV計算式</div>
+      <div class="method-text">
+        IPがベットした場合の期待値は以下の式で算出します。
+      </div>
+      <div class="method-formula">
+        EV(ベット) = フォールド率 × ポット<br>
+        　　　　　+ (1 − フォールド率) × (IP_EQ × (ポット + 2×ベット) − ベット)
+      </div>
+      <div class="method-text" style="margin-top:.5rem">
+        コールされた場合のIPのEVは、コールしたコンボ群に対するエクイティ加重平均を使用します。
+      </div>
+    </div>
+
+    <div class="method-section">
+      <div class="method-section-title">GTO Wizard等のソルバーとの差異について</div>
+      <div class="method-text">
+        本ツールは<strong>GTOソルバーではありません</strong>。以下の点で異なります。
+      </div>
+      <div class="method-diff-grid">
+        <div class="method-diff-item">
+          <div class="method-diff-label">本ツール</div>
+          <div class="method-diff-desc">フロップ単体のエクイティをベースにしたEV近似。フォールド率はGTOポットオッズから算出。マルチストリートの継続EVは考慮しない。</div>
+        </div>
+        <div class="method-diff-item method-diff-solver">
+          <div class="method-diff-label">GTOソルバー</div>
+          <div class="method-diff-desc">フロップ〜リバー全ストリートを再帰的に解き、混合戦略（確率的コール/フォールド/レイズ）を含むゲームツリーの均衡解を計算。</div>
+        </div>
+      </div>
+      <div class="method-text" style="margin-top:.65rem">
+        この差異により、EV値は数BB程度ずれることがあります。本ツールは「特定のハンドが相手レンジに対してどの程度有利か」を素早く確認する<strong>ハンドレビュー・感覚トレーニング用途</strong>に適しています。
+      </div>
+    </div>
+
+    <div class="method-section">
+      <div class="method-section-title">ハンド強度評価</div>
+      <div class="method-text">
+        5枚のベストハンドをロイヤルフラッシュ（9）〜ハイカード（0）の10段階でスコアリングし、比較します。7枚（ハンド2枚＋ボード5枚）から最強5枚を選ぶC(7,2)=21通りの組み合わせを全探索します。
+      </div>
+    </div>
+
+    <div class="method-section" style="border-bottom:none">
+      <div class="method-section-title">計算の限界・注意事項</div>
+      <div class="method-text">
+        <ul class="method-list">
+          <li>サンプルベースのため、毎回わずかに異なる値が出ます（再計算で±0.5%程度）</li>
+          <li>コンボ数が多いレンジ（300コンボ超）では計算に数秒かかる場合があります</li>
+          <li>フォールド率はGTOポットオッズの理論値であり、実際の相手の戦略とは異なります</li>
+          <li>マルチストリートEVはショーダウンまでの継続アクションを考慮しない単ストリート近似です</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</details>
+</div>
+
+<style>
+.method-details{background:var(--bg2);border:1px solid var(--b1);border-radius:var(--r2);overflow:hidden;background-image:var(--washi)}
+.method-details[open] .method-chevron{transform:rotate(180deg)}
+.method-summary{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;list-style:none;user-select:none}
+.method-summary::-webkit-details-marker{display:none}
+.method-summary:hover{background:var(--bg3)}
+.method-summary-icon{font-family:var(--font-ja);font-size:15px;font-weight:700;color:var(--shu);width:26px;height:26px;border:1px solid var(--shu);border-radius:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.8}
+.method-summary-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--t1);letter-spacing:.02em}
+.method-summary-sub{font-size:10px;color:var(--t3);margin-left:2px}
+.method-chevron{margin-left:auto;font-size:12px;color:var(--t3);transition:transform .2s}
+.method-body{padding:0 1.1rem 1.1rem;border-top:1px solid var(--b1)}
+.method-section{padding:.9rem 0;border-bottom:1px solid var(--b1)}
+.method-section-title{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--t2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem}
+.method-text{font-size:12px;color:var(--t2);line-height:1.7}
+.method-text strong{color:var(--t1);font-weight:600}
+.method-formula{font-family:'Space Grotesk',monospace;font-size:11px;color:var(--bdhl);background:var(--bdbg);border:1px solid var(--bd);border-left:3px solid var(--bd);border-radius:var(--r);padding:.5rem .75rem;margin:.5rem 0;line-height:1.8}
+.method-diff-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.5rem}
+@media(max-width:500px){.method-diff-grid{grid-template-columns:1fr}}
+.method-diff-item{background:var(--bg3);border:1px solid var(--b2);border-radius:var(--r);padding:.6rem .75rem}
+.method-diff-solver{border-color:var(--oop);background:var(--oopbg)}
+.method-diff-label{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.3rem}
+.method-diff-solver .method-diff-label{color:var(--oophl)}
+.method-diff-desc{font-size:11px;color:var(--t2);line-height:1.6}
+.method-list{padding-left:1.2rem;display:flex;flex-direction:column;gap:.3rem}
+.method-list li{font-size:11px;color:var(--t2);line-height:1.6}
+</style>
+</body>
+</html>
