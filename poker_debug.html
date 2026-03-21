@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Poker EQ Debug Viewer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0b09;--bg2:#131108;--bg3:#1a1710;--bg4:#201d16;
+  --b1:#28241a;--b2:#363028;--b3:#484038;
+  --t1:#e4dcc8;--t2:#948878;--t3:#565048;
+  --ip:#1858c8;--ipbg:#080f22;--iphl:#5090f0;
+  --oop:#5040b0;--oopbg:#0c0820;--oophl:#9878e8;
+  --shu:#b83018;--ai:#1848a8;--aihl:#5090e8;--kin:#c89018;--gin:#788898;
+  --grn:#188858;--red:#b83028;
+  --win:#1a8a48;--lose:#8a1a28;--tie:#3a5a3a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg);color:var(--t1);font-family:'Space Grotesk','Hiragino Sans',sans-serif;font-size:13px}
+body{padding:1.5rem 1rem 4rem;max-width:1000px;margin:0 auto}
+
+h1{font-size:16px;font-weight:700;letter-spacing:.04em;margin-bottom:.3rem;color:var(--t1)}
+.subtitle{font-size:11px;color:var(--t3);margin-bottom:1.5rem}
+
+/* Setup */
+.setup{background:var(--bg2);border:1px solid var(--b2);border-radius:8px;padding:1rem;margin-bottom:1.2rem}
+.setup-row{display:flex;flex-wrap:wrap;gap:.75rem;align-items:flex-end;margin-bottom:.75rem}
+.setup-row:last-child{margin-bottom:0}
+.field{display:flex;flex-direction:column;gap:4px}
+.lbl{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase}
+.inp{padding:6px 10px;font-size:13px;font-weight:600;border:1px solid var(--b2);border-radius:4px;background:var(--bg3);color:var(--t1);width:130px;font-family:inherit}
+.inp:focus{outline:none;border-color:var(--aihl)}
+.inp.ip{border-color:var(--ip)}
+.inp.oop{border-color:var(--oop)}
+.run-btn{padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer;border-radius:4px;border:1px solid var(--aihl);background:rgba(80,144,232,.12);color:var(--aihl);font-family:inherit;letter-spacing:.04em;transition:all .15s}
+.run-btn:hover{background:rgba(80,144,232,.22)}
+.run-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* Summary bar */
+.summary{background:var(--bg2);border:1px solid var(--b1);border-radius:8px;padding:.9rem 1rem;margin-bottom:1rem;display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap}
+.eq-val{font-size:22px;font-weight:800;line-height:1}
+.eq-lbl{font-size:9px;font-weight:700;letter-spacing:.08em;opacity:.7;margin-top:2px}
+.eq-bar{flex:1;min-width:200px}
+.eq-track{height:8px;border-radius:4px;overflow:hidden;background:var(--bg4);display:flex;margin-bottom:3px}
+.eq-ip{background:var(--ip);transition:width .3s}
+.eq-oop{background:var(--oop);transition:width .3s}
+.eq-meta{display:flex;justify-content:space-between;font-size:9px;color:var(--t3)}
+.stat-box{background:var(--bg3);border:1px solid var(--b2);border-radius:4px;padding:4px 10px;text-align:center}
+.stat-num{font-size:14px;font-weight:700}
+.stat-lbl{font-size:9px;color:var(--t3);letter-spacing:.04em}
+
+/* Sample grid */
+.samples-grid{display:flex;flex-direction:column;gap:.75rem}
+.sample{background:var(--bg2);border:1px solid var(--b1);border-radius:8px;overflow:hidden;transition:border-color .1s}
+.sample.win{border-left:3px solid var(--grn)}
+.sample.lose{border-left:3px solid var(--red)}
+.sample.tie-s{border-left:3px solid var(--gin)}
+.sample-hdr{display:flex;align-items:center;gap:10px;padding:.65rem 1rem;background:var(--bg3);cursor:pointer;user-select:none}
+.sample-num{font-size:10px;font-weight:700;color:var(--t3);width:24px;flex-shrink:0}
+.result-badge{font-size:10px;font-weight:700;padding:2px 10px;border-radius:2px;letter-spacing:.04em}
+.badge-win{background:rgba(24,136,88,.25);color:#40d890;border:1px solid rgba(24,136,88,.4)}
+.badge-lose{background:rgba(184,48,40,.2);color:#f07060;border:1px solid rgba(184,48,40,.35)}
+.badge-tie{background:rgba(120,136,152,.15);color:var(--gin);border:1px solid rgba(120,136,152,.3)}
+.sample-cards{display:flex;gap:6px;align-items:center;flex:1;flex-wrap:wrap}
+.card-group{display:flex;gap:3px;align-items:center}
+.card-group-label{font-size:9px;font-weight:700;padding:1px 6px;border-radius:2px;margin-right:2px}
+.lbl-ip{background:var(--ipbg);color:var(--iphl);border:1px solid var(--ip)}
+.lbl-oop{background:var(--oopbg);color:var(--oophl);border:1px solid var(--oop)}
+.lbl-board{background:var(--bg4);color:var(--t2);border:1px solid var(--b2)}
+.lbl-run{background:rgba(200,144,24,.1);color:var(--kin);border:1px solid rgba(200,144,24,.3)}
+.card{font-size:13px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--bg4);border:1px solid var(--b2);line-height:1.3}
+.card.s{color:#6ab0ff}
+.card.c{color:#60d880}
+.card.d{color:#f0b860}
+.card.h{color:#f06868}
+.arrow{font-size:10px;color:var(--b3)}
+
+/* Detail section */
+.sample-detail{display:none;padding:.75rem 1rem;border-top:1px solid var(--b1)}
+.sample-detail.open{display:block}
+.detail-title{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.5rem}
+.combos-table{width:100%;border-collapse:collapse;font-size:11px}
+.combos-table th{text-align:left;padding:3px 8px;color:var(--t3);font-weight:600;font-size:10px;letter-spacing:.04em;border-bottom:1px solid var(--b1)}
+.combos-table td{padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.03)}
+.combos-table tr:last-child td{border-bottom:none}
+.score-name{font-weight:700}
+.score-ip{color:var(--iphl)}
+.score-oop{color:var(--oophl)}
+.win-cell{color:#40d890;font-weight:700}
+.lose-cell{color:#f07060;font-weight:700}
+.tie-cell{color:var(--gin);font-weight:700}
+.five-cards{display:flex;gap:2px}
+
+/* Running count */
+.running{font-size:11px;color:var(--t3);text-align:center;padding:.75rem;display:none}
+</style>
+</head>
+<body>
+
+<h1>Poker EQ Debug Viewer</h1>
+<div class="subtitle">MCエクイティ計算の過程を可視化 — 各ランアウトのカード・ハンド強度・勝敗を確認できます</div>
+
+<div class="setup">
+  <div class="setup-row">
+    <div class="field"><div class="lbl">IPハンド</div><input class="inp ip" id="ipHand" value="As Ks" placeholder="As Ks"></div>
+    <div class="field"><div class="lbl">OOPハンド</div><input class="inp oop" id="oopHand" value="9h 8h" placeholder="9h 8h"></div>
+    <div class="field"><div class="lbl">ボード (3〜5枚)</div><input class="inp" id="board" value="Ah 9d 8s" placeholder="Ah 9d 8s"></div>
+    <div class="field"><div class="lbl">表示サンプル数</div><input class="inp" id="nSamples" type="number" value="12" min="1" max="50"></div>
+    <div class="field"><div class="lbl">総試行回数</div><input class="inp" id="nTrials" type="number" value="10000" min="100" max="100000"></div>
+  </div>
+  <div class="setup-row">
+    <button class="run-btn" id="runBtn" onclick="runDebug()">▶ 計算 & 可視化</button>
+    <div id="err" style="font-size:11px;color:#f07060;align-self:center"></div>
+  </div>
+</div>
+
+<div id="summary" style="display:none"></div>
+<div class="running" id="running">計算中...</div>
+<div class="samples-grid" id="samples"></div>
+
+<script>
+const RV={A:14,K:13,Q:12,J:11,T:10,9:9,8:8,7:7,6:6,5:5,4:4,3:3,2:2};
+const RANKS='AKQJT98765432'.split('');
+const SUIT_NAMES={s:'♠',c:'♣',d:'♦',h:'♥'};
+const SUIT_CLS={s:'s',c:'c',d:'d',h:'h'};
+const HAND_NAMES=['ハイカード','ワンペア','ツーペア','スリーカード','ストレート','フラッシュ','フルハウス','フォーカード','ストレートフラッシュ','ロイヤルフラッシュ'];
+
+function parseCard(s){
+  s=s.trim();if(!s)return null;
+  const r=s[0].toUpperCase(),su=s[1]?.toLowerCase();
+  if(!RV[r]||!['s','c','d','h'].includes(su))return null;
+  return r+su;
+}
+function parseHand(s){return s.trim().split(/\s+/).map(parseCard).filter(Boolean);}
+
+function mkDk(ex=[]){const d=[];RANKS.forEach(r=>['s','c','d','h'].forEach(s=>{const k=r+s;if(!ex.includes(k))d.push(k);}));return d;}
+function sh(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
+function hRk(cards){
+  const cv=cards.map(k=>({rank:RV[k[0]],suit:k.slice(1)}));
+  const ranks=cv.map(c=>c.rank).sort((a,b)=>b-a);const suits=cv.map(c=>c.suit);
+  const rc={};ranks.forEach(r=>{rc[r]=(rc[r]||0)+1;});const sc={};suits.forEach(s=>{sc[s]=(sc[s]||0)+1;});
+  const cnt=Object.values(rc).sort((a,b)=>b-a);const fl=Object.values(sc).some(v=>v>=5);
+  let st=false,sH=0;const uR=[...new Set(ranks)];if(uR.includes(14))uR.push(1);
+  for(let i=0;i<=uR.length-5;i++){const sl=uR.slice(i,i+5);if(sl[0]-sl[4]===4&&new Set(sl).size===5){st=true;sH=sl[0];break;}}
+  if(fl&&st){const fs=Object.entries(sc).find(([,v])=>v>=5)[0];const fc=cv.filter(c=>c.suit===fs).map(c=>c.rank).sort((a,b)=>b-a);if(fc.includes(14))fc.push(1);let sh2=0;for(let i=0;i<=fc.length-5;i++){const sl=fc.slice(i,i+5);if(sl[0]-sl[4]===4&&new Set(sl).size===5){sh2=sl[0];break;}}if(sh2>=10)return[9,sh2];if(sh2>0)return[8,sh2];}
+  if(cnt[0]===4){const q=+Object.keys(rc).find(r=>rc[r]===4);const k=Math.max(...Object.keys(rc).filter(r=>rc[r]!==4).map(Number));return[7,q,k];}
+  if(cnt[0]===3&&cnt[1]===2){const t=+Object.keys(rc).find(r=>rc[r]===3);const p=+Object.keys(rc).find(r=>rc[r]===2);return[6,t,p];}
+  if(fl){const fs=Object.entries(sc).find(([,v])=>v>=5)[0];const fr=cv.filter(c=>c.suit===fs).map(c=>c.rank).sort((a,b)=>b-a).slice(0,5);return[5,...fr];}
+  if(st)return[4,sH];
+  if(cnt[0]===3){const t=+Object.keys(rc).find(r=>rc[r]===3);const k=Object.keys(rc).filter(r=>rc[r]!==3).map(Number).sort((a,b)=>b-a);return[3,t,...k];}
+  if(cnt[0]===2&&cnt[1]===2){const ps=Object.keys(rc).filter(r=>rc[r]===2).map(Number).sort((a,b)=>b-a);const k=Math.max(...Object.keys(rc).filter(r=>rc[r]===1).map(Number));return[2,...ps,k];}
+  if(cnt[0]===2){const p=+Object.keys(rc).find(r=>rc[r]===2);const k=Object.keys(rc).filter(r=>rc[r]!==2).map(Number).sort((a,b)=>b-a);return[1,p,...k];}
+  return[0,...ranks.slice(0,5)];}
+function b5full(hand,brd){
+  const all=[...hand,...brd];
+  if(all.length<5)return{score:hRk(all),best:all};
+  let best=null,bestCards=null;
+  for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++){
+    const five=all.filter((_,k)=>k!==i&&k!==j);
+    const h=hRk(five);
+    if(!best||cmp(h,best)>0){best=h;bestCards=five;}
+  }
+  return{score:best,best:bestCards};
+}
+function cmp(a,b){for(let i=0;i<Math.max(a.length,b.length);i++){const d=(a[i]||0)-(b[i]||0);if(d!==0)return d;}return 0;}
+
+function cardHTML(k){
+  const r=k[0],s=k.slice(1);
+  return`<span class="card ${SUIT_CLS[s]}">${r}${SUIT_NAMES[s]}</span>`;
+}
+function cardsHTML(arr){return arr.map(cardHTML).join('');}
+
+function handDesc(score){
+  const name=HAND_NAMES[score[0]]||'?';
+  const ranks=['','A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+  // 補足情報
+  const r=(n)=>{
+    const nm=['','A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+    return n>=1&&n<=14?nm[15-n]||n:n;
+  };
+  if(score[0]===1)return`${name}（${r(15-score[1])}のペア）`;
+  if(score[0]===2)return`${name}（${r(15-score[1])}と${r(15-score[2])}）`;
+  if(score[0]===3)return`${name}（${r(15-score[1])}）`;
+  if(score[0]===4)return`${name}（${r(15-score[1])}ハイ）`;
+  if(score[0]===5)return`${name}（${r(15-score[1])}ハイ）`;
+  if(score[0]===6)return`${name}（${r(15-score[1])}フル of ${r(15-score[2])}）`;
+  if(score[0]===7)return`${name}（${r(15-score[1])}）`;
+  return name;
+}
+
+// ランクを人間が読める形に
+function rankName(n){
+  const m={14:'A',13:'K',12:'Q',11:'J',10:'T'};
+  return m[n]||String(n);
+}
+function handDescClear(score){
+  const name=HAND_NAMES[score[0]]||'?';
+  const rn=n=>rankName(n);
+  if(score[0]===0)return`${name}（${rn(score[1])}ハイ）`;
+  if(score[0]===1)return`${name}（${rn(score[1])}）`;
+  if(score[0]===2)return`${name}（${rn(score[1])} + ${rn(score[2])}）`;
+  if(score[0]===3)return`${name}（${rn(score[1])}）`;
+  if(score[0]===4)return`${name}（${rn(score[1])}ハイ）`;
+  if(score[0]===5)return`${name}（${rn(score[1])}ハイ）`;
+  if(score[0]===6)return`${name}（${rn(score[1])} full of ${rn(score[2])}）`;
+  if(score[0]===7)return`${name}（${rn(score[1])}）`;
+  return name;
+}
+
+function runDebug(){
+  const btn=document.getElementById('runBtn');
+  const err=document.getElementById('err');
+  err.textContent='';
+
+  const ipH=parseHand(document.getElementById('ipHand').value);
+  const oopH=parseHand(document.getElementById('oopHand').value);
+  const board=parseHand(document.getElementById('board').value);
+  const nSamples=Math.min(50,Math.max(1,+document.getElementById('nSamples').value||12));
+  const nTrials=Math.min(100000,Math.max(100,+document.getElementById('nTrials').value||10000));
+
+  if(ipH.length!==2){err.textContent='IPハンドは2枚入力してください（例: As Ks）';return;}
+  if(oopH.length!==2){err.textContent='OOPハンドは2枚入力してください（例: 9h 8h）';return;}
+  if(board.length<3||board.length>5){err.textContent='ボードは3〜5枚入力してください';return;}
+
+  const allCards=[...ipH,...oopH,...board];
+  const uniq=new Set(allCards);
+  if(uniq.size!==allCards.length){err.textContent='重複したカードがあります';return;}
+
+  btn.disabled=true;btn.textContent='計算中...';
+  document.getElementById('running').style.display='block';
+  document.getElementById('summary').style.display='none';
+  document.getElementById('samples').innerHTML='';
+
+  setTimeout(()=>{
+    const dk=mkDk([...ipH,...oopH,...board]);
+    const need=5-board.length;
+    let wI=0,wO=0,tie=0,n=0;
+    const samples=[];
+
+    for(let i=0;i<nTrials;i++){
+      const d=sh(dk);
+      const runout=d.slice(0,need);
+      const bd=[...board,...runout];
+      const riP=b5full(ipH,bd);
+      const riO=b5full(oopH,bd);
+      const c=cmp(riP.score,riO.score);
+      if(c>0)wI++;else if(c<0)wO++;else tie++;
+      n++;
+      if(samples.length<nSamples){
+        samples.push({runout:[...runout],board:[...board],ipHand:[...ipH],oopHand:[...oopH],bd:[...bd],ipResult:riP,oopResult:riO,winner:c>0?'ip':c<0?'oop':'tie',trial:i+1});
+      }
+    }
+
+    const ipEq=(wI+tie*.5)/n*100;
+    const oopEq=100-ipEq;
+
+    // Summary
+    const sumEl=document.getElementById('summary');
+    sumEl.style.display='flex';
+    sumEl.className='summary';
+    sumEl.innerHTML=`
+      <div style="text-align:center">
+        <div class="eq-val" style="color:var(--iphl)">${ipEq.toFixed(1)}%</div>
+        <div class="eq-lbl" style="color:var(--iphl)">IP EQ</div>
+      </div>
+      <div class="eq-bar">
+        <div class="eq-track">
+          <div class="eq-ip" style="width:${ipEq}%"></div>
+          <div class="eq-oop" style="width:${oopEq}%"></div>
+        </div>
+        <div class="eq-meta">
+          <span style="color:var(--iphl)">${ipH.map(c=>c[0]+SUIT_NAMES[c.slice(1)]).join('')}</span>
+          <span>チョップ ${(tie/n*100).toFixed(1)}%</span>
+          <span style="color:var(--oophl)">${oopH.map(c=>c[0]+SUIT_NAMES[c.slice(1)]).join('')}</span>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div class="eq-val" style="color:var(--oophl)">${oopEq.toFixed(1)}%</div>
+        <div class="eq-lbl" style="color:var(--oophl)">OOP EQ</div>
+      </div>
+      <div class="stat-box"><div class="stat-num" style="color:#40d890">${wI}</div><div class="stat-lbl">IP勝利</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:#f07060">${wO}</div><div class="stat-lbl">OOP勝利</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--gin)">${tie}</div><div class="stat-lbl">チョップ</div></div>
+      <div class="stat-box"><div class="stat-num">${n.toLocaleString()}</div><div class="stat-lbl">試行回数</div></div>
+    `;
+
+    // Samples
+    const samplesEl=document.getElementById('samples');
+    samplesEl.innerHTML=samples.map((s,idx)=>{
+      const wClass=s.winner==='ip'?'win':s.winner==='oop'?'lose':'tie-s';
+      const badge=s.winner==='ip'
+        ?`<span class="result-badge badge-win">IP 勝ち</span>`
+        :s.winner==='oop'
+        ?`<span class="result-badge badge-lose">OOP 勝ち</span>`
+        :`<span class="result-badge badge-tie">チョップ</span>`;
+
+      const ipBestHTML=`<div class="five-cards">${s.ipResult.best.map(cardHTML).join('')}</div>`;
+      const oopBestHTML=`<div class="five-cards">${s.oopResult.best.map(cardHTML).join('')}</div>`;
+
+      // スコア比較テーブル
+      const compareRows=[];
+      const maxLen=Math.max(s.ipResult.score.length,s.oopResult.score.length);
+      const labels=['手役ランク','主値','副値1','副値2','副値3','副値4'];
+      for(let i=0;i<maxLen;i++){
+        const iv=s.ipResult.score[i]??'-';
+        const ov=s.oopResult.score[i]??'-';
+        const iDisplay=i===0?(HAND_NAMES[iv]||iv):rankName(iv);
+        const oDisplay=i===0?(HAND_NAMES[ov]||ov):rankName(ov);
+        const diff=i===0?cmp([iv],[ov]):(iv==='-'?0:ov==='-'?0:iv-ov);
+        const iCls=diff>0?'win-cell':diff<0?'lose-cell':'';
+        const oCls=diff<0?'win-cell':diff>0?'lose-cell':'';
+        compareRows.push(`<tr>
+          <td style="color:var(--t3)">${labels[i]||'値'+i}</td>
+          <td class="${iCls} score-ip">${iDisplay}</td>
+          <td class="${oCls} score-oop">${oDisplay}</td>
+          <td style="color:var(--t3);font-size:10px">${diff>0?'← IP優勢':diff<0?'OOP優勢 →':'同値'}</td>
+        </tr>`);
+      }
+
+      return`<div class="sample ${wClass}" id="s${idx}">
+  <div class="sample-hdr" onclick="toggleDetail(${idx})">
+    <span class="sample-num">#${s.trial}</span>
+    ${badge}
+    <div class="sample-cards">
+      <span class="card-group-label lbl-ip">IP</span>
+      <div class="card-group">${s.ipHand.map(cardHTML).join('')}</div>
+      <span class="card-group-label lbl-oop">OOP</span>
+      <div class="card-group">${s.oopHand.map(cardHTML).join('')}</div>
+      <span class="card-group-label lbl-board">フロップ</span>
+      <div class="card-group">${s.board.map(cardHTML).join('')}</div>
+      ${s.runout.length>0?`<span class="card-group-label lbl-run">ランアウト</span><div class="card-group">${s.runout.map(cardHTML).join('')}</div>`:''}
+    </div>
+    <span style="font-size:10px;color:var(--t3);flex-shrink:0">▾ 詳細</span>
+  </div>
+  <div class="sample-detail" id="d${idx}">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div>
+        <div class="detail-title" style="color:var(--iphl)">IP のベスト5枚</div>
+        <div style="margin-bottom:.4rem">${ipBestHTML}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--iphl)">${handDescClear(s.ipResult.score)}</div>
+      </div>
+      <div>
+        <div class="detail-title" style="color:var(--oophl)">OOP のベスト5枚</div>
+        <div style="margin-bottom:.4rem">${oopBestHTML}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--oophl)">${handDescClear(s.oopResult.score)}</div>
+      </div>
+    </div>
+    <div style="margin-top:.75rem">
+      <div class="detail-title">スコア比較 (左から優先順位)</div>
+      <table class="combos-table">
+        <thead><tr><th>項目</th><th style="color:var(--iphl)">IP</th><th style="color:var(--oophl)">OOP</th><th>判定</th></tr></thead>
+        <tbody>${compareRows.join('')}</tbody>
+      </table>
+    </div>
+    <div style="margin-top:.65rem;font-size:10px;color:var(--t3)">
+      全7枚: ${s.bd.map(cardHTML).join(' ')} — ${s.ipHand.map(cardHTML).join('')}
+    </div>
+  </div>
+</div>`;
+    }).join('');
+
+    document.getElementById('running').style.display='none';
+    btn.disabled=false;btn.textContent='▶ 計算 & 可視化';
+  },20);
+}
+
+function toggleDetail(idx){
+  const el=document.getElementById('d'+idx);
+  el.classList.toggle('open');
+}
+
+// 初期実行
+runDebug();
+</script>
+</body>
+</html>
